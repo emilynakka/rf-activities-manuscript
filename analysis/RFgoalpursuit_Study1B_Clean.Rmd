@@ -1,0 +1,1538 @@
+---
+title: "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities"
+subtitle: "Study 1B: Data Cleaning, Including Removal of Participant Identifiers"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+header-includes:
+   - \usepackage[utf8]{inputenc}
+   - \DeclareUnicodeCharacter{2588}{-}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+# Load Libraries and Themes
+
+```{r libs, echo = TRUE}
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(stringr) # Required for data cleaning
+library(rIP) # Required to filter out fraudulent M-Turk participants
+```
+
+# Import and Clean Data
+
+Please note: Raw dataset should be exported from Qualtrics with the *numeric values* (**not** *choice text*) option selected for the following code to run properly.
+
+```{r clean, echo = TRUE, tidy = TRUE}
+# IMPORT DATA
+mfraw <- read.csv(file="data/RFgoalpursuit_study1b_raw.csv", header = TRUE)
+stimlist <- read.csv(file="data/RFgoalpursuit_study1b2b_stimlist.csv", header = TRUE)
+
+## PREPARE DATA FOR CLEANING AND ANALYSIS
+
+# Delete two unnecessary additional header rows from Qualtrics export:
+mfraw <- mfraw[-which(mfraw$StartDate == "Start Date"), ] # Repeated header row with column names
+mfraw <- mfraw[-1,] # Header row with Qualtrics code in curly brackets
+
+# Delete rows for participants who did not consent
+mfraw <- mfraw[(mfraw$consent == 1), ] # n = 67
+
+# Add ID column
+mfraw$id <- 1:nrow(mfraw)
+
+# Rename columns for ease of coding
+mfraw <- dplyr::rename(mfraw, duration = Duration..in.seconds.,
+                       ideal1.timer = ideal1.timer_Page.Submit,
+                       ideal2.timer = ideal2.timer_Page.Submit,
+                       ideal3.timer = ideal3.timer_Page.Submit,
+                       ideal4.timer = ideal4.timer_Page.Submit,
+                       ought1.timer = ought1.timer_Page.Submit,
+                       ought2.timer = ought2.timer_Page.Submit,
+                       ought3.timer = ought3.timer_Page.Submit,
+                       ought4.timer = ought4.timer_Page.Submit,
+                       ideal1r.timer = ideal1.rateideal.t_Page.Submit,
+                       ideal2r.timer = ideal2.rateideal.t_Page.Submit,
+                       ideal3r.timer = ideal3.rateideal.t_Page.Submit,
+                       ideal4r.timer = ideal4.rateideal.t_Page.Submit,
+                       ought1r.timer = ought1.rateought.t_Page.Submit,
+                       ought2r.timer = ought2.rateought.t_Page.Submit,
+                       ought3r.timer = ought3.rateought.t_Page.Submit,
+                       ought4r.timer = ought4.rateought.t_Page.Submit,
+                       ideal1a.timer = ideal1.rateactual.t_Page.Submit,
+                       ideal2a.timer = ideal2.rateactual.t_Page.Submit,
+                       ideal3a.timer = ideal3.rateactual.t_Page.Submit,
+                       ideal4a.timer = ideal4.rateactual.t_Page.Submit,
+                       ought1a.timer = ought1.rateactual.t_Page.Submit,
+                       ought2a.timer = ought2.rateactual.t_Page.Submit,
+                       ought3a.timer = ought3.rateactual.t_Page.Submit,
+                       ought4a.timer = ought4.rateactual.t_Page.Submit)
+
+# Delete unnecessary Qualtrics columns
+mfraw$StartDate <- NULL
+mfraw$EndDate <- NULL
+mfraw$RecipientLastName <- NULL
+mfraw$RecipientFirstName <- NULL
+mfraw$RecipientEmail <- NULL
+
+# Convert character columns to character
+mfraw.char <- c("Status", "IPAddress", "Finished", "RecordedDate", "ResponseId", "animal", "food", "color", "ideal1", "ideal2", "ideal3", "ideal4", "ought1", "ought2", "ought3", "ought4", "prevL_prac", "prevL_sort", "promL_prac", "promL_sort", "truthL_prac", "truthL_sort", "controlL_prac", "controlL_sort", "process_rf", "process_tc", "diff_stim", "process_fb", "gender", "language", "ethnicity", "education", "income", "location")
+mfraw[mfraw.char] <- lapply(mfraw[mfraw.char], as.character)
+rm(mfraw.char)
+
+# Convert numeric columns to numeric
+mfraw.num <- c("PID", "Progress", "duration", "ideal1.timer", "ideal2.timer", "ideal3.timer", "ideal4.timer", "ought1.timer", "ought2.timer", "ought3.timer", "ought4.timer", "ideal1r.timer", "ideal2r.timer", "ideal3r.timer", "ideal4r.timer", "ought1r.timer", "ought2r.timer", "ought3r.timer", "ought4r.timer", "ideal1a.timer", "ideal2a.timer", "ideal3a.timer", "ideal4a.timer", "ought1a.timer", "ought2a.timer", "ought3a.timer", "ought4a.timer","rmq_1", "rmq_2", "rmq_3", "rmq_4", "rmq_5", "rmq_6", "rmq_7", "rmq_8", "rmq_9", "rmq_10", "rmq_11", "rmq_12", "rmq_13", "rmq_14", "rmq_15", "rmq_16", "rmq_17", "rmq_18", "rmq_19", "rmq_20", "rmq_21", "rmq_22", "rmq_23", "rmq_24", "rmq_25", "rmq_26", "rmq_27", "rmq_28", "rmq_29", "rmq_30", "rfq_1", "rfq_2", "rfq_3", "rfq_4", "rfq_5", "rfq_6", "rfq_7", "rfq_8", "rfq_9", "rfq_10", "rfq_11", "diff_process_rf", "diff_process_tc", "age") # Define numeric columns
+mfraw[mfraw.num] <- lapply(mfraw[mfraw.num], as.character) # Convert numeric columns to character (before numeric) to prevent values from changing
+mfraw[mfraw.num] <- lapply(mfraw[mfraw.num], as.numeric) # Convert numeric columns to numeric
+rm(mfraw.num) # Clear mfraw.num from workspace as it is no longer needed
+
+## DEMOGRAPHIC MEASURES
+
+# Renaming and ordering factor levels where appropriate
+mfraw$gender[is.na(mfraw$gender)] <- "No Response"
+mfraw$gender[mfraw$gender == ""] <- "No Response"
+mfraw$gender[mfraw$gender == "1"] <- "Male"
+mfraw$gender[mfraw$gender == "2"] <- "Female"
+mfraw$gender[mfraw$gender == "3"] <- "Other"
+mfraw$gender <- as.factor(mfraw$gender)
+
+mfraw$language[is.na(mfraw$language)] <- "No Response"
+mfraw$language[mfraw$language == ""] <- "No Response"
+mfraw$language[mfraw$language == "1"] <- "English"
+mfraw$language[mfraw$language == "4"] <- "Spanish"
+mfraw$language[mfraw$language == "3"] <- "Other"
+mfraw$language <- as.factor(mfraw$language)
+
+mfraw$ethnicity[is.na(mfraw$ethnicity)] <- "No Response"
+mfraw$ethnicity[mfraw$ethnicity == ""] <- "No Response"
+mfraw$ethnicity[!(mfraw$ethnicity == "1" | mfraw$ethnicity == "2" | mfraw$ethnicity == "3" |
+                  mfraw$ethnicity == "4" | mfraw$ethnicity == "5" | mfraw$ethnicity == "6" |
+                  mfraw$ethnicity == "7")] <- "Multiracial"
+mfraw$ethnicity[mfraw$ethnicity == "1"] <- "Native American"
+mfraw$ethnicity[mfraw$ethnicity == "2"] <- "Asian"
+mfraw$ethnicity[mfraw$ethnicity == "3"] <- "Black"
+mfraw$ethnicity[mfraw$ethnicity == "4"] <- "Hispanic"
+mfraw$ethnicity[mfraw$ethnicity == "5"] <- "Pacific Islander"
+mfraw$ethnicity[mfraw$ethnicity == "6"] <- "White"
+mfraw$ethnicity[mfraw$ethnicity == "7"] <- "Other"
+mfraw$ethnicity <- as.factor(mfraw$ethnicity)
+
+mfraw$education[is.na(mfraw$education)] <- "No Response"
+mfraw$education[mfraw$education == ""] <- "No Response"
+mfraw$education[mfraw$education == "1"] <- "None"
+mfraw$education[mfraw$education == "2"] <- "Elementary"
+mfraw$education[mfraw$education == "3"] <- "Some High School"
+mfraw$education[mfraw$education == "4"] <- "High School"
+mfraw$education[mfraw$education == "5"] <- "Some College"
+mfraw$education[mfraw$education == "6"] <- "Associate's"
+mfraw$education[mfraw$education == "7"] <- "Bachelor's"
+mfraw$education[mfraw$education == "8"] <- "Master's"
+mfraw$education[mfraw$education == "9"] <- "Doctorate"
+mfraw$education <- as.factor(mfraw$education)
+mfraw$education <- factor(mfraw$education, ordered = TRUE, levels = c("None", "Elementary", "Some High School", "High School", "Some College", "Associate's", "Bachelor's", "Master's", "Doctorate", "No Response"))
+
+mfraw$income[is.na(mfraw$income)] <- "No Response"
+mfraw$income[mfraw$income == ""] <- "No Response"
+mfraw$income[mfraw$income == "1"] <- "$0-$10K"
+mfraw$income[mfraw$income == "2"] <- "$10K-$20K"
+mfraw$income[mfraw$income == "3"] <- "$20K-$40K"
+mfraw$income[mfraw$income == "4"] <- "$40K-$70K"
+mfraw$income[mfraw$income == "5"] <- "$70K-$100K"
+mfraw$income[mfraw$income == "6"] <- "$100K-$250K"
+mfraw$income[mfraw$income == "7"] <- "$250K-$500K"
+mfraw$income[mfraw$income == "8"] <- "$500K+"
+mfraw$income[mfraw$income == "9"] <- "No Response"
+mfraw$income <- as.factor(mfraw$income)
+mfraw$income <- factor(mfraw$income, ordered = TRUE, levels = c("$0-$10K", "$10K-$20K", "$20K-$40K", "$40K-$70K", "$70K-$100K", "$100K-$250K", "$250K-$500K", "$500K+", "No Response"))
+
+mfraw$location[mfraw$location == "No Response"] <- NA
+mfraw$location[mfraw$location == "2"] <- "NotInUS"
+mfraw$location[mfraw$location == "3"] <- "AL"
+mfraw$location[mfraw$location == "4"] <- "AK"
+mfraw$location[mfraw$location == "5"] <- "AS"
+mfraw$location[mfraw$location == "6"] <- "AZ"
+mfraw$location[mfraw$location == "7"] <- "AR"
+mfraw$location[mfraw$location == "8"] <- "CA"
+mfraw$location[mfraw$location == "58"] <- "CO"
+mfraw$location[mfraw$location == "9"] <- "CT"
+mfraw$location[mfraw$location == "10"] <- "DE"
+mfraw$location[mfraw$location == "59"] <- "DC"
+mfraw$location[mfraw$location == "12"] <- "FL"
+mfraw$location[mfraw$location == "13"] <- "GA"
+mfraw$location[mfraw$location == "14"] <- "GU"
+mfraw$location[mfraw$location == "15"] <- "HI"
+mfraw$location[mfraw$location == "16"] <- "ID"
+mfraw$location[mfraw$location == "65"] <- "IL"
+mfraw$location[mfraw$location == "66"] <- "IN"
+mfraw$location[mfraw$location == "67"] <- "IA"
+mfraw$location[mfraw$location == "68"] <- "KS"
+mfraw$location[mfraw$location == "69"] <- "KY"
+mfraw$location[mfraw$location == "70"] <- "LA"
+mfraw$location[mfraw$location == "71"] <- "ME"
+mfraw$location[mfraw$location == "72"] <- "MD"
+mfraw$location[mfraw$location == "73"] <- "MA"
+mfraw$location[mfraw$location == "74"] <- "MI"
+mfraw$location[mfraw$location == "75"] <- "MN"
+mfraw$location[mfraw$location == "76"] <- "MS"
+mfraw$location[mfraw$location == "105"] <- "MO"
+mfraw$location[mfraw$location == "77"] <- "MT"
+mfraw$location[mfraw$location == "78"] <- "NE"
+mfraw$location[mfraw$location == "79"] <- "NV"
+mfraw$location[mfraw$location == "80"] <- "NH"
+mfraw$location[mfraw$location == "81"] <- "NJ"
+mfraw$location[mfraw$location == "82"] <- "NM"
+mfraw$location[mfraw$location == "83"] <- "NY"
+mfraw$location[mfraw$location == "84"] <- "NC"
+mfraw$location[mfraw$location == "85"] <- "ND"
+mfraw$location[mfraw$location == "86"] <- "MP"
+mfraw$location[mfraw$location == "87"] <- "OH"
+mfraw$location[mfraw$location == "88"] <- "OK"
+mfraw$location[mfraw$location == "89"] <- "OR"
+mfraw$location[mfraw$location == "90"] <- "PA"
+mfraw$location[mfraw$location == "91"] <- "PR"
+mfraw$location[mfraw$location == "92"] <- "RI"
+mfraw$location[mfraw$location == "93"] <- "SC"
+mfraw$location[mfraw$location == "94"] <- "SD"
+mfraw$location[mfraw$location == "95"] <- "TN"
+mfraw$location[mfraw$location == "96"] <- "TX"
+mfraw$location[mfraw$location == "97"] <- "VI"
+mfraw$location[mfraw$location == "98"] <- "UT"
+mfraw$location[mfraw$location == "99"] <- "VT"
+mfraw$location[mfraw$location == "100"] <- "VA"
+mfraw$location[mfraw$location == "101"] <- "WA"
+mfraw$location[mfraw$location == "102"] <- "WV"
+mfraw$location[mfraw$location == "103"] <- "WI"
+mfraw$location[mfraw$location == "104"] <- "WY"
+mfraw$location <- as.factor(mfraw$location)
+
+## EXCLUDE NON-NATIVE ENGLISH SPEAKERS
+
+# Redefining dataset to reflect exclusions (per pre-registration; to be subset if excluded group is >10%)
+nonenglish <- nrow(subset(mfraw, language != "English")) # 11 non-native English speakers
+nonenglishpct <- nrow(subset(mfraw, language != "English"))/nrow(mfraw) # 16%
+mfraw_eng <- subset(mfraw, language == "English") # > 10%, so creating a special subset to run with these participants excluded (primary analyses will include all participants)
+
+## RESPONSE-LATENCY-BASED MOTIVATION MEASURES: REGULATORY FOCUS STRENGTH
+
+# Checking on people who repeated attributes
+rfattributes <- dplyr::select(mfraw, id, ideal1, ideal2, ideal3, ought1, ought2, ought3)
+rfattributes$ideal1 <- str_to_lower(rfattributes$ideal1)
+rfattributes$ideal2 <- str_to_lower(rfattributes$ideal2)
+rfattributes$ideal3 <- str_to_lower(rfattributes$ideal3)
+rfattributes$ought1 <- str_to_lower(rfattributes$ought1)
+rfattributes$ought2 <- str_to_lower(rfattributes$ought2)
+rfattributes$ought3 <- str_to_lower(rfattributes$ought3)
+rfattributes$excl_rfs[rfattributes$id == 7 | rfattributes$id == 11 | rfattributes$id == 16 | rfattributes$id == 42] <- 1 # Flag IDs to be excluded from RFS analyses because measure was not completed properly
+rfattributes <- dplyr::select(rfattributes, id, excl_rfs)
+mfraw <- merge(mfraw, rfattributes, by = "id")
+rm(rfattributes)
+
+# Subset data for participants for whom we can calculate RF-Strength scores
+mfraw_rfs <- dplyr::filter(mfraw, is.na(excl_rfs)) # n = 63
+
+# Log-adjust promotion / prevention timer scores to normalize the distributions
+mfraw_rfs$ought1.timer.log <- log(mfraw_rfs$ought1.timer)
+mfraw_rfs$ought1r.timer.log <- log(mfraw_rfs$ought1r.timer)
+mfraw_rfs$ought1a.timer.log <- log(mfraw_rfs$ought1a.timer)
+mfraw_rfs$ought2.timer.log <- log(mfraw_rfs$ought2.timer)
+mfraw_rfs$ought2r.timer.log <- log(mfraw_rfs$ought2r.timer)
+mfraw_rfs$ought2a.timer.log <- log(mfraw_rfs$ought2a.timer)
+mfraw_rfs$ought3.timer.log <- log(mfraw_rfs$ought3.timer)
+mfraw_rfs$ought3r.timer.log <- log(mfraw_rfs$ought3r.timer)
+mfraw_rfs$ought3a.timer.log <- log(mfraw_rfs$ought3a.timer)
+mfraw_rfs$ideal1.timer.log <- log(mfraw_rfs$ideal1.timer)
+mfraw_rfs$ideal1r.timer.log <- log(mfraw_rfs$ideal1r.timer)
+mfraw_rfs$ideal1a.timer.log <- log(mfraw_rfs$ideal1a.timer)
+mfraw_rfs$ideal2.timer.log <- log(mfraw_rfs$ideal2.timer)
+mfraw_rfs$ideal2r.timer.log <- log(mfraw_rfs$ideal2r.timer)
+mfraw_rfs$ideal2a.timer.log <- log(mfraw_rfs$ideal2a.timer)
+mfraw_rfs$ideal3.timer.log <- log(mfraw_rfs$ideal3.timer)
+mfraw_rfs$ideal3r.timer.log <- log(mfraw_rfs$ideal3r.timer)
+mfraw_rfs$ideal3a.timer.log <- log(mfraw_rfs$ideal3a.timer)
+
+# Calculate prevention and promotion strength
+mfraw_rfs$prev1.str <- mfraw_rfs$ought1.timer.log + mfraw_rfs$ought1r.timer.log + mfraw_rfs$ought1a.timer.log
+mfraw_rfs$prev2.str <- mfraw_rfs$ought2.timer.log + mfraw_rfs$ought2r.timer.log + mfraw_rfs$ought2a.timer.log
+mfraw_rfs$prev3.str <- mfraw_rfs$ought3.timer.log + mfraw_rfs$ought3r.timer.log + mfraw_rfs$ought3a.timer.log
+mfraw_rfs$prom1.str <- mfraw_rfs$ideal1.timer.log + mfraw_rfs$ideal1r.timer.log + mfraw_rfs$ideal1a.timer.log
+mfraw_rfs$prom2.str <- mfraw_rfs$ideal2.timer.log + mfraw_rfs$ideal2r.timer.log + mfraw_rfs$ideal2a.timer.log
+mfraw_rfs$prom3.str <- mfraw_rfs$ideal3.timer.log + mfraw_rfs$ideal3r.timer.log + mfraw_rfs$ideal3a.timer.log
+
+# In determining RF strength, reverse the signs so higher = stronger
+mfraw_rfs$prev.str <- -1 * (mfraw_rfs$prev1.str + mfraw_rfs$prev2.str + mfraw_rfs$prev3.str)/3
+mfraw_rfs$prom.str <- -1 * (mfraw_rfs$prom1.str + mfraw_rfs$prom2.str + mfraw_rfs$prom3.str)/3
+
+# Replacing -Inf with NA
+mfraw_rfs$prev.str[!is.finite(mfraw_rfs$prev.str)] <- NA
+mfraw_rfs$prom.str[!is.finite(mfraw_rfs$prom.str)] <- NA
+
+# Calculate mean-centered and scaled prevention strength and promotion strength scores
+mfraw_rfs$prev.strc <- mfraw_rfs$prev.str
+mfraw_rfs$prev.strc <- as.numeric(scale(mfraw_rfs$prev.strc, center = TRUE, scale = FALSE))
+mfraw_rfs$prev.strcs <- as.numeric(scale(mfraw_rfs$prev.strc, center = TRUE, scale = TRUE))
+mfraw_rfs$prom.strc <- mfraw_rfs$prom.str
+mfraw_rfs$prom.strc <- as.numeric(scale(mfraw_rfs$prom.strc, center = TRUE, scale = FALSE))
+mfraw_rfs$prom.strcs <- as.numeric(scale(mfraw_rfs$prom.strc, center = TRUE, scale = TRUE))
+
+# Calculate promotion strength dominance scores and mean-center them
+mfraw_rfs$promdom.str <- mfraw_rfs$prom.str - mfraw_rfs$prev.str
+mfraw_rfs$promdom.strc <- mfraw_rfs$promdom.str
+mfraw_rfs$promdom.strc <- as.numeric(scale(mfraw_rfs$promdom.strc, center = TRUE, scale = FALSE))
+
+# Select newly calculated columns in RFS version of dataframe and merge back into mfraw
+mfraw_rfs <- dplyr::select(mfraw_rfs, id, ideal1.timer.log, ideal1r.timer.log, ideal1a.timer.log, ideal2.timer.log, ideal2r.timer.log, ideal2a.timer.log, ideal3.timer.log, ideal3r.timer.log, ideal3a.timer.log, ought1.timer.log, ought1r.timer.log, ought1a.timer.log, ought2.timer.log, ought2r.timer.log, ought2a.timer.log, ought3.timer.log, ought3r.timer.log, ought3a.timer.log, prev.str, prom.str, prev.strc, prev.strcs, prom.strc, prom.strcs, promdom.str, promdom.strc)
+mfraw <- merge(mfraw, mfraw_rfs, by = "id", all.x = T, all.y = F)
+rm(mfraw_rfs)
+
+## QUESTIONNAIRE-BASED MOTIVATION MEASURES: REGULATORY FOCUS PRIDE AND REGULATORY MODE
+
+# Calculate prevention pride, promotion pride, assessment, and locomotion scores
+mfraw$prev.eff <- ((6-mfraw$rfq_2) + (6-mfraw$rfq_4) + mfraw$rfq_5 + (6-mfraw$rfq_6) + (6-mfraw$rfq_8))/5
+mfraw$prom.eff <- ((6-mfraw$rfq_1) + mfraw$rfq_3 + mfraw$rfq_7 + (6-mfraw$rfq_9) + mfraw$rfq_10 + (6-mfraw$rfq_11))/6
+mfraw$ass <- ((7-mfraw$rmq_2) + mfraw$rmq_6 + mfraw$rmq_7 + mfraw$rmq_9 + (7-mfraw$rmq_10) + mfraw$rmq_11 + mfraw$rmq_15 + mfraw$rmq_19 + mfraw$rmq_20 + mfraw$rmq_22 + (7-mfraw$rmq_27) + mfraw$rmq_30)/12
+mfraw$loc <- (mfraw$rmq_1 + mfraw$rmq_3 + mfraw$rmq_4 + mfraw$rmq_5 + mfraw$rmq_8 + mfraw$rmq_16 + mfraw$rmq_21 + mfraw$rmq_25 + mfraw$rmq_28 + mfraw$rmq_29 + (7-mfraw$rmq_13) + (7-mfraw$rmq_24))/12
+
+# Calculate mean-centered and scaled prevention pride, promotion pride, assessment, and locomotion scores
+mfraw$prev.effc <- mfraw$prev.eff
+mfraw$prev.effc <- as.numeric(scale(mfraw$prev.effc, center = TRUE, scale = FALSE))
+mfraw$prev.effcs <- as.numeric(scale(mfraw$prev.effc, center = TRUE, scale = TRUE))
+mfraw$prom.effc <- mfraw$prom.eff
+mfraw$prom.effc <- as.numeric(scale(mfraw$prom.effc, center = TRUE, scale = FALSE))
+mfraw$prom.effcs <- as.numeric(scale(mfraw$prom.effc, center = TRUE, scale = TRUE))
+mfraw$amc <- mfraw$ass
+mfraw$amc <- as.numeric(scale(mfraw$amc, center = TRUE, scale = FALSE))
+mfraw$amcs <- as.numeric(scale(mfraw$amc, center = TRUE, scale = TRUE))
+mfraw$lmc <- mfraw$loc
+mfraw$lmc <- as.numeric(scale(mfraw$lmc, center = TRUE, scale = FALSE))
+mfraw$lmcs <- as.numeric(scale(mfraw$lmc, center = TRUE, scale = TRUE))
+
+# Calculate promotion pride and locomotion dominance scores and mean-center them
+mfraw$promdom.eff <- mfraw$prom.eff - mfraw$prev.eff
+mfraw$promdom.effc <- mfraw$promdom.eff
+mfraw$promdom.effc <- as.numeric(scale(mfraw$promdom.effc, center = TRUE, scale = FALSE))
+mfraw$locdom <- mfraw$loc - mfraw$ass
+mfraw$locdomc <- mfraw$locdom
+mfraw$locdomc <- as.numeric(scale(mfraw$locdomc, center = TRUE, scale = FALSE))
+
+## SORTING MEASURES (PREP)
+
+# Create column indicating which sorting categories were on the left (i.e., "E" key)
+mfraw$rfleft <- ifelse(mfraw$prevL_prac != "", "prev", "prom")
+mfraw$tcleft <- ifelse(mfraw$truthL_prac != "", "truth", "control")
+
+# Effect-code "left" variables
+mfraw$rfleft.e <- 0
+mfraw$rfleft.e[mfraw$rfleft == "prev"] <- -.5
+mfraw$rfleft.e[mfraw$rfleft == "prom"] <- .5
+mfraw$tcleft.e <- 0
+mfraw$tcleft.e[mfraw$tcleft == "truth"] <- -.5
+mfraw$tcleft.e[mfraw$tcleft == "control"] <- .5
+
+# Drop unneeded factor levels resulting from old Qualtrics headers
+mfraw <- droplevels(mfraw)
+
+## SORTING MEASURES: PREVENTION VS. PROMOTION
+
+# Check for people who skipped RF sorting task or who have nonvalid data
+# Are there 3 "END" characters at end of string? If not, did not complete task; mark skipped
+mfraw$p.prevL_prac <- substring(mfraw$prevL_prac, (stringr::str_length(mfraw$prevL_prac)-2), stringr::str_length(mfraw$prevL_prac)) != "END"
+mfraw$p.prevL_sort <- substring(mfraw$prevL_sort, (stringr::str_length(mfraw$prevL_sort)-2), stringr::str_length(mfraw$prevL_sort)) != "END"
+mfraw$p.promL_prac <- substring(mfraw$promL_prac, (stringr::str_length(mfraw$promL_prac)-2), stringr::str_length(mfraw$promL_prac)) != "END"
+mfraw$p.promL_sort <- substring(mfraw$promL_sort, (stringr::str_length(mfraw$promL_sort)-2), stringr::str_length(mfraw$promL_sort)) != "END"
+
+mfraw$prevL_prac[mfraw$p.prevL_prac] <- ""
+mfraw$prevL_sort[mfraw$p.prevL_sort] <- ""
+mfraw$promL_prac[mfraw$p.promL_prac] <- ""
+mfraw$promL_sort[mfraw$p.promL_sort] <- ""
+
+# Mark people who skipped task as such
+mfraw$skipped.prevL_prac <- mfraw$prevL_prac == ""
+mfraw$skipped.prevL_sort <- mfraw$prevL_sort == ""
+mfraw$skipped.promL_prac <- mfraw$promL_prac == ""
+mfraw$skipped.promL_sort <- mfraw$promL_sort == ""
+
+# Check integrity of people who completed task
+mfraw$p.prevL_prac <- (mfraw$p.prevL_prac & !mfraw$skipped.prevL_prac)
+mfraw$p.prevL_sort <- (mfraw$p.prevL_sort & !mfraw$skipped.prevL_sort)
+mfraw$p.promL_prac <- (mfraw$p.promL_prac & !mfraw$skipped.promL_prac)
+mfraw$p.promL_sort <- (mfraw$p.promL_sort & !mfraw$skipped.promL_sort)
+  
+check.me <- function(temp){
+  temp <- stringr::str_replace_all(temp, "END", "")
+  temp <- stringr::str_replace_all(temp, ",", "")  
+  temp <- stringr::str_replace_all(temp, "C", "")  
+  temp <- stringr::str_replace_all(temp, "I", "")  
+  temp <- stringr::str_replace_all(temp, "0", "")  
+  temp <- stringr::str_replace_all(temp, "1", "")  
+  temp <- stringr::str_replace_all(temp, "2", "")  
+  temp <- stringr::str_replace_all(temp, "3", "")  
+  temp <- stringr::str_replace_all(temp, "4", "")  
+  temp <- stringr::str_replace_all(temp, "5", "")  
+  temp <- stringr::str_replace_all(temp, "6", "")  
+  temp <- stringr::str_replace_all(temp, "7", "")  
+  temp <- stringr::str_replace_all(temp, "8", "")  
+  temp <- stringr::str_replace_all(temp, "9", "")
+  return(!temp=="")
+}
+
+mfraw$p.prevL_prac <- as.logical(mfraw$p.prevL_prac + check.me(mfraw$prevL_prac))
+mfraw$p.prevL_sort <- as.logical(mfraw$p.prevL_sort + check.me(mfraw$prevL_sort))
+mfraw$p.promL_prac <- as.logical(mfraw$p.promL_prac + check.me(mfraw$promL_prac))
+mfraw$p.promL_sort <- as.logical(mfraw$p.promL_sort + check.me(mfraw$promL_sort))
+rm(check.me)
+mfraw$p.prt <- as.logical(mfraw$p.prevL_prac + mfraw$p.prevL_sort + mfraw$p.promL_prac + mfraw$p.promL_sort)
+mfraw$rfflag <- mfraw$p.prt == TRUE
+mfraw$prevL_prac[mfraw$rfflag] <- ""
+mfraw$prevL_sort[mfraw$rfflag] <- ""
+mfraw$promL_prac[mfraw$rfflag] <- ""
+mfraw$promL_sort[mfraw$rfflag] <- ""
+
+# Update skip counts to reflect number of validly completed tasks
+mfraw$skipped.prevL_prac <- mfraw$prevL_prac == ""
+mfraw$skipped.prevL_sort <- mfraw$prevL_sort == ""
+mfraw$skipped.promL_prac <- mfraw$promL_prac == ""
+mfraw$skipped.promL_sort <- mfraw$promL_sort == ""
+
+# Remove flagging columns
+mfraw$p.prevL_prac <- NULL
+mfraw$p.prevL_sort <- NULL
+mfraw$p.promL_prac <- NULL
+mfraw$p.promL_sort <- NULL
+mfraw$skipped.prevL_prac <- NULL
+mfraw$skipped.prevL_sort <- NULL
+mfraw$skipped.promL_prac <- NULL
+mfraw$skipped.promL_sort <- NULL
+mfraw$p.prt <- NULL
+
+# Convert strings to lists
+mfraw$prevL_prac <- strsplit(mfraw$prevL_prac, ',')
+mfraw$promL_prac <- strsplit(mfraw$promL_prac, ',')
+mfraw$prevL_sort <- strsplit(mfraw$prevL_sort, ',')
+mfraw$promL_sort <- strsplit(mfraw$promL_sort, ',')
+
+# Unnest
+mfprevL_prac <- unnest(mfraw, prevL_prac)
+mfpromL_prac <- unnest(mfraw, promL_prac)
+mfprevL_sort <- unnest(mfraw, prevL_sort)
+mfpromL_sort <- unnest(mfraw, promL_sort)
+
+# Create RF trial type column
+mfprevL_prac$rftrialtype <- "prevL_prac"
+mfpromL_prac$rftrialtype <- "promL_prac"
+mfprevL_sort$rftrialtype <- "prevL_sort"
+mfpromL_sort$rftrialtype <- "promL_sort"
+
+# Rename data field in each to "data"
+mfprevL_prac <- dplyr::rename(mfprevL_prac, data = prevL_prac)
+mfpromL_prac <- dplyr::rename(mfpromL_prac, data = promL_prac)
+mfprevL_sort <- dplyr::rename(mfprevL_sort, data = prevL_sort)
+mfpromL_sort <- dplyr::rename(mfpromL_sort, data = promL_sort)
+
+# Delete "END" trials
+mfprevL_prac <- mfprevL_prac[!(mfprevL_prac$data == "END"),]
+mfprevL_sort <- mfprevL_sort[!(mfprevL_sort$data == "END"),]
+mfpromL_prac <- mfpromL_prac[!(mfpromL_prac$data == "END"),]
+mfpromL_sort <- mfpromL_sort[!(mfpromL_sort$data == "END"),]
+
+# Number RF trials - 39 total (1-6 prac, 7-39 sort)
+mfprevL_prac <- mfprevL_prac %>%
+  group_by(id) %>%
+  mutate(rftrial = 1:n()) %>%
+  ungroup()
+mfpromL_prac <- mfpromL_prac %>%
+  group_by(id) %>%
+  mutate(rftrial = 1:n()) %>%
+  ungroup()
+mfprevL_sort <- mfprevL_sort %>%
+  group_by(id) %>%
+  mutate(rftrial = 7:(n()+6)) %>%
+  ungroup()
+mfpromL_sort <- mfpromL_sort %>%
+  group_by(id) %>%
+  mutate(rftrial = 7:(n()+6)) %>%
+  ungroup()
+
+# Merge dataframes
+mf <- merge(mfprevL_prac, mfpromL_prac, all = T)
+mf <- merge(mf, mfprevL_sort, all = T)
+mf <- merge(mf, mfpromL_sort, all = T)
+
+# Rename data column
+mf <- dplyr::rename(mf, rfdata = data)
+
+# Extract stimulus number from rfdata column
+mf$stimnum <- 0
+mf$stimnum <- ifelse(str_count(mf$rfdata,"C") == 1, word(mf$rfdata,1,sep = "C"), mf$stimnum)
+mf$stimnum <- ifelse(str_count(mf$rfdata,"I") == 1, word(mf$rfdata,1,sep = "I"), mf$stimnum)
+mf$stimnum <- as.numeric(mf$stimnum)
+
+# Extract if RF sorting was as predicted from rfdata column
+mf$rfaspred <- 0
+mf$rfaspred <- ifelse(str_count(mf$rfdata,"C") == 1, 1, mf$rfaspred)
+
+# Extract RF reaction time from rfdata column
+mf$rfrt <- 0
+mf$rfrt <- ifelse(str_count(mf$rfdata,"C") == 1, word(mf$rfdata,2,sep = "C"), mf$rfrt)
+mf$rfrt <- ifelse(str_count(mf$rfdata,"I") == 1, word(mf$rfdata,2,sep = "I"), mf$rfrt)
+mf$rfrt <- as.numeric(mf$rfrt)
+
+# Remove old dataframes
+rm(mfprevL_prac)
+rm(mfpromL_prac)
+rm(mfprevL_sort)
+rm(mfpromL_sort)
+
+# Mean-center and scale trial for later analyses
+mf$rftrialc <- mf$rftrial
+mf$rftrialc <- as.numeric(scale(mf$rftrialc, center = TRUE, scale = FALSE))
+mf$rftrialcs <- mf$rftrial
+mf$rftrialcs <- as.numeric(scale(mf$rftrialcs, center = TRUE, scale = TRUE))
+
+# Flag and remove trials that are too short or too long (under 250 ms or over 10K ms)
+mf$rfflag[mf$rfrt < 250 | mf$rfrt > 10000] <- TRUE
+removedtrials <- nrow(subset(mf, rfflag == 1)) # 10 trials removed for being too short or too long
+mf <- mf[!(mf$rfflag == TRUE),] # n = 2594 trials remaining in dataset
+
+# Bring in stimulus-specific details (e.g., stimtype, predicted RF and TC, frequency) through merge with stimlist
+mf <- merge(mf, stimlist, all = T)
+
+# Log-transform reaction times
+mf$rflogrt <- log(mf$rfrt)
+
+# Label category chosen (promotion vs. prevention)
+mf$rfcat <- as.character("")
+mf$rfcat[mf$stimrf_pred == "prom" & mf$rfaspred == 1] <- "prom"
+mf$rfcat[mf$stimrf_pred == "prom" & mf$rfaspred == 0] <- "prev"
+mf$rfcat[mf$stimrf_pred == "prev" & mf$rfaspred == 1] <- "prev"
+mf$rfcat[mf$stimrf_pred == "prev" & mf$rfaspred == 0] <- "prom"
+
+# Dummy-code promotion-prevention categorization
+mf$rfcat.d <- 0
+mf$rfcat.d[mf$rfcat == "prom"] <- 1
+
+# Effect-code promotion-prevention categorization
+mf$rfcat.e <- 0
+mf$rfcat.e[mf$rfcat == "prev"] <- -.5
+mf$rfcat.e[mf$rfcat == "prom"] <- .5
+
+## SORTING MEASURES: TRUTH VS. CONTROL
+
+# Check for people who skipped RF sorting task or who have nonvalid data
+# Are there 3 "END" characters at end of string? If not, did not complete task; mark skipped
+mfraw$p.truthL_prac <- substring(mfraw$truthL_prac, (stringr::str_length(mfraw$truthL_prac)-2), stringr::str_length(mfraw$truthL_prac)) != "END"
+mfraw$p.truthL_sort <- substring(mfraw$truthL_sort, (stringr::str_length(mfraw$truthL_sort)-2), stringr::str_length(mfraw$truthL_sort)) != "END"
+mfraw$p.controlL_prac <- substring(mfraw$controlL_prac, (stringr::str_length(mfraw$controlL_prac)-2), stringr::str_length(mfraw$controlL_prac)) != "END"
+mfraw$p.controlL_sort <- substring(mfraw$controlL_sort, (stringr::str_length(mfraw$controlL_sort)-2), stringr::str_length(mfraw$controlL_sort)) != "END"
+
+mfraw$truthL_prac[mfraw$p.truthL_prac] <- ""
+mfraw$truthL_sort[mfraw$p.truthL_sort] <- ""
+mfraw$controlL_prac[mfraw$p.controlL_prac] <- ""
+mfraw$controlL_sort[mfraw$p.controlL_sort] <- ""
+
+# Mark people who skipped task as such
+mfraw$skipped.truthL_prac <- mfraw$truthL_prac == ""
+mfraw$skipped.truthL_sort <- mfraw$truthL_sort == ""
+mfraw$skipped.controlL_prac <- mfraw$controlL_prac == ""
+mfraw$skipped.controlL_sort <- mfraw$controlL_sort == ""
+
+# Check integrity of people who completed task
+mfraw$p.truthL_prac <- (mfraw$p.truthL_prac & !mfraw$skipped.truthL_prac)
+mfraw$p.truthL_sort <- (mfraw$p.truthL_sort & !mfraw$skipped.truthL_sort)
+mfraw$p.controlL_prac <- (mfraw$p.controlL_prac & !mfraw$skipped.controlL_prac)
+mfraw$p.controlL_sort <- (mfraw$p.controlL_sort & !mfraw$skipped.controlL_sort)
+  
+check.me <- function(temp){
+  temp <- stringr::str_replace_all(temp, "END", "")
+  temp <- stringr::str_replace_all(temp, ",", "")  
+  temp <- stringr::str_replace_all(temp, "C", "")  
+  temp <- stringr::str_replace_all(temp, "I", "")  
+  temp <- stringr::str_replace_all(temp, "0", "")  
+  temp <- stringr::str_replace_all(temp, "1", "")  
+  temp <- stringr::str_replace_all(temp, "2", "")  
+  temp <- stringr::str_replace_all(temp, "3", "")  
+  temp <- stringr::str_replace_all(temp, "4", "")  
+  temp <- stringr::str_replace_all(temp, "5", "")  
+  temp <- stringr::str_replace_all(temp, "6", "")  
+  temp <- stringr::str_replace_all(temp, "7", "")  
+  temp <- stringr::str_replace_all(temp, "8", "")  
+  temp <- stringr::str_replace_all(temp, "9", "")
+  return(!temp=="")
+}
+
+mfraw$p.truthL_prac <- as.logical(mfraw$p.truthL_prac + check.me(mfraw$truthL_prac))
+mfraw$p.truthL_sort <- as.logical(mfraw$p.truthL_sort + check.me(mfraw$truthL_sort))
+mfraw$p.controlL_prac <- as.logical(mfraw$p.controlL_prac + check.me(mfraw$controlL_prac))
+mfraw$p.controlL_sort <- as.logical(mfraw$p.controlL_sort + check.me(mfraw$controlL_sort))
+rm(check.me)
+mfraw$p.prt <- as.logical(mfraw$p.truthL_prac + mfraw$p.truthL_sort + mfraw$p.controlL_prac + mfraw$p.controlL_sort)
+mfraw$tcflag <- mfraw$p.prt == TRUE
+mfraw$truthL_prac[mfraw$tcflag] <- ""
+mfraw$truthL_sort[mfraw$tcflag] <- ""
+mfraw$controlL_prac[mfraw$tcflag] <- ""
+mfraw$controlL_sort[mfraw$tcflag] <- ""
+
+# Update skip counts to reflect number of validly completed tasks
+mfraw$skipped.truthL_prac <- mfraw$truthL_prac == ""
+mfraw$skipped.truthL_sort <- mfraw$truthL_sort == ""
+mfraw$skipped.controlL_prac <- mfraw$controlL_prac == ""
+mfraw$skipped.controlL_sort <- mfraw$controlL_sort == ""
+
+# Remove flagging columns
+mfraw$p.truthL_prac <- NULL
+mfraw$p.truthL_sort <- NULL
+mfraw$p.controlL_prac <- NULL
+mfraw$p.controlL_sort <- NULL
+mfraw$skipped.truthL_prac <- NULL
+mfraw$skipped.truthL_sort <- NULL
+mfraw$skipped.controlL_prac <- NULL
+mfraw$skipped.controlL_sort <- NULL
+mfraw$p.prt <- NULL
+
+# Convert strings to lists
+mfraw$truthL_prac <- strsplit(mfraw$truthL_prac, ',')
+mfraw$controlL_prac <- strsplit(mfraw$controlL_prac, ',')
+mfraw$truthL_sort <- strsplit(mfraw$truthL_sort, ',')
+mfraw$controlL_sort <- strsplit(mfraw$controlL_sort, ',')
+
+# Unnest
+mftruthL_prac <- unnest(mfraw, truthL_prac)
+mfcontrolL_prac <- unnest(mfraw, controlL_prac)
+mftruthL_sort <- unnest(mfraw, truthL_sort)
+mfcontrolL_sort <- unnest(mfraw, controlL_sort)
+
+# Create TC trial type column
+mftruthL_prac$tctrialtype <- "truthL_prac"
+mfcontrolL_prac$tctrialtype <- "controlL_prac"
+mftruthL_sort$tctrialtype <- "truthL_sort"
+mfcontrolL_sort$tctrialtype <- "controlL_sort"
+
+# Rename data field in each to "data"
+mftruthL_prac <- dplyr::rename(mftruthL_prac, data = truthL_prac)
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, data = controlL_prac)
+mftruthL_sort <- dplyr::rename(mftruthL_sort, data = truthL_sort)
+mfcontrolL_sort <- dplyr::rename(mfcontrolL_sort, data = controlL_sort)
+
+# Delete "END" trials
+mftruthL_prac <- mftruthL_prac[!(mftruthL_prac$data == "END"),]
+mftruthL_sort <- mftruthL_sort[!(mftruthL_sort$data == "END"),]
+mfcontrolL_prac <- mfcontrolL_prac[!(mfcontrolL_prac$data == "END"),]
+mfcontrolL_sort <- mfcontrolL_sort[!(mfcontrolL_sort$data == "END"),]
+
+# Number TC trials - 39 total (1-6 prac, 7-39 sort)
+mftruthL_prac <- mftruthL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+mfcontrolL_prac <- mfcontrolL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+mftruthL_sort <- mftruthL_sort %>%
+  group_by(id) %>%
+  mutate(tctrial = 7:(n()+6)) %>%
+  ungroup()
+mfcontrolL_sort <- mfcontrolL_sort %>%
+  group_by(id) %>%
+  mutate(tctrial = 7:(n()+6)) %>%
+  ungroup()
+
+# Rename data column
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, tcdata = data)
+
+# Extract stimulus number from tcdata column
+mfcontrolL_prac$stimnum <- 0
+mfcontrolL_prac$stimnum <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, word(mfcontrolL_prac$tcdata,1,sep = "C"), mfcontrolL_prac$stimnum)
+mfcontrolL_prac$stimnum <- ifelse(str_count(mfcontrolL_prac$tcdata,"I") == 1, word(mfcontrolL_prac$tcdata,1,sep = "I"), mfcontrolL_prac$stimnum)
+mfcontrolL_prac$stimnum <- as.numeric(mfcontrolL_prac$stimnum)
+
+# Extract if TC sorting was as predicted from tcdata column
+mfcontrolL_prac$tcaspred <- 0
+mfcontrolL_prac$tcaspred <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, 1, mfcontrolL_prac$tcaspred)
+
+# Extract RF reaction time from tcdata column
+mfcontrolL_prac$tcrt <- 0
+mfcontrolL_prac$tcrt <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, word(mfcontrolL_prac$tcdata,2,sep = "C"), mfcontrolL_prac$tcrt)
+mfcontrolL_prac$tcrt <- ifelse(str_count(mfcontrolL_prac$tcdata,"I") == 1, word(mfcontrolL_prac$tcdata,2,sep = "I"), mfcontrolL_prac$tcrt)
+mfcontrolL_prac$tcrt <- as.numeric(mfcontrolL_prac$tcrt)
+
+# In mfcontrolL_prac dataframe, keep only trials for practice stimuli (consider: stimnum = 4; inquire: stimnum = 5; investigate: stimnum = 6; control: stimnum = 7; manage: stimnum = 8; operate: stimnum = 9)
+mfcontrolL_prac <- dplyr::filter(mfcontrolL_prac, stimnum == 7 | stimnum == 8 | stimnum == 9 | stimnum == 10 | stimnum == 11 | stimnum == 12)
+
+# Renumber mfcontrolL_prac trials
+mfcontrolL_prac <- mfcontrolL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+
+# Delete columns that will be recalculated after merging and rename data column
+mfcontrolL_prac$stimnum <- NULL
+mfcontrolL_prac$tcaspred <- NULL
+mfcontrolL_prac$tcrt <- NULL
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, data = tcdata)
+
+mfcontrolL_prac <- as.data.frame(mfcontrolL_prac)
+
+# Merge dataframes
+mftc <- merge(mftruthL_prac, mfcontrolL_prac, all = T, sort = F)
+mftc <- merge(mftc, mftruthL_sort, all = T, sort = F)
+mftc <- merge(mftc, mfcontrolL_sort, all = T, sort = F)
+
+# Select only the unique columns in this TC-sorting dataframe, plus ID (for merging later on)
+mftc <- dplyr::select(mftc, id, tcflag, data, tctrialtype, tctrial)
+
+# Rename data column
+mftc <- dplyr::rename(mftc, tcdata = data)
+
+# Extract stimulus number from tcdata column
+mftc$stimnum <- 0
+mftc$stimnum <- ifelse(str_count(mftc$tcdata,"C") == 1, word(mftc$tcdata,1,sep = "C"), mftc$stimnum)
+mftc$stimnum <- ifelse(str_count(mftc$tcdata,"I") == 1, word(mftc$tcdata,1,sep = "I"), mftc$stimnum)
+mftc$stimnum <- as.numeric(mftc$stimnum)
+
+# Extract if TC sorting was as predicted from tcdata column
+mftc$tcaspred <- 0
+mftc$tcaspred <- ifelse(str_count(mftc$tcdata,"C") == 1, 1, mftc$tcaspred)
+
+# Extract RF reaction time from tcdata column
+mftc$tcrt <- 0
+mftc$tcrt <- ifelse(str_count(mftc$tcdata,"C") == 1, word(mftc$tcdata,2,sep = "C"), mftc$tcrt)
+mftc$tcrt <- ifelse(str_count(mftc$tcdata,"I") == 1, word(mftc$tcdata,2,sep = "I"), mftc$tcrt)
+mftc$tcrt <- as.numeric(mftc$tcrt)
+
+# Remove old dataframes
+rm(mftruthL_prac)
+rm(mfcontrolL_prac)
+rm(mftruthL_sort)
+rm(mfcontrolL_sort)
+
+# Mean-center and scale trial for later analyses
+mftc$tctrialc <- mftc$tctrial
+mftc$tctrialc <- as.numeric(scale(mftc$tctrialc, center = TRUE, scale = FALSE))
+mftc$tctrialcs <- mftc$tctrial
+mftc$tctrialcs <- as.numeric(scale(mftc$tctrialcs, center = TRUE, scale = TRUE))
+
+# Flag and remove trials that are too short or too long (under 250 ms or over 10K ms)
+mftc$tcflag[mftc$tcrt < 250 | mftc$tcrt > 10000] <- TRUE
+removedtctrials <- nrow(subset(mftc, tcflag == 1)) # 10 trials removed for being too short or too long
+mftc <- mftc[!(mftc$tcflag == TRUE),] # n = 2506 trials remaining in dataset
+
+# Bring in stimulus-specific details (e.g., stimtype, predicted RF and TC, frequency) through merge with stimlist
+mftc <- merge(mftc, stimlist, all = T)
+
+# Log-transform reaction times
+mftc$tclogrt <- log(mftc$tcrt)
+
+# Label category chosen (truth vs. control)
+mftc$tccat <- as.character("")
+mftc$tccat[mftc$stimtc_pred == "control" & mftc$tcaspred == 1] <- "control"
+mftc$tccat[mftc$stimtc_pred == "control" & mftc$tcaspred == 0] <- "truth"
+mftc$tccat[mftc$stimtc_pred == "truth" & mftc$tcaspred == 1] <- "truth"
+mftc$tccat[mftc$stimtc_pred == "truth" & mftc$tcaspred == 0] <- "control"
+
+# Dummy-code truth-control categorization
+mftc$tccat.d <- 0
+mftc$tccat.d[mftc$tccat == "control"] <- 1
+
+# Effect-code truth-control categorization
+mftc$tccat.e <- 0
+mftc$tccat.e[mftc$tccat == "truth"] <- -.5
+mftc$tccat.e[mftc$tccat == "control"] <- .5
+
+# Merge with master MF dataframe and clean up environment
+mf <- merge(mf, mftc, by = c("id", "stim", "stimnum", "stimtype", "stimtc", "stimrf", "stimtc_pred", "stimrf_pred", "freq"), all = T)
+rm(mftc)
+
+## SUMMARY STATS FOR SORTING TASKS
+
+# Calculate probability of being categorized as promotion
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(prom_prob = sum(rfcat == "prom", na.rm = T)/n()) %>%
+  ungroup()
+
+# Calculate probability of being categorized as control
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(control_prob = sum(tccat == "control", na.rm = T)/n()) %>%
+  ungroup()
+
+# Calculate "winning" regulatory focus
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(winningrf = if(sum(rfcat == "prev", na.rm = T) > sum(rfcat == "prom", na.rm = T)){
+     "prev"
+      } else if(sum(rfcat == "prev", na.rm = T) < sum(rfcat == "prom", na.rm = T)){
+       "prom"
+      } else "tie") %>%
+  ungroup()
+
+# Calculate "winning" truth vs. control motive
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(winningtc = if(sum(tccat == "truth", na.rm = T) > sum(tccat == "control", na.rm = T)){
+     "truth"
+      } else if(sum(tccat == "truth", na.rm = T) < sum(tccat == "control", na.rm = T)){
+       "control"
+      } else "tie") %>%
+  ungroup()
+
+# Calculate probability of being categorized as the winning regulatory focus
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(winningrf_prob = if(sum(rfcat == "prev", na.rm = T) > sum(rfcat == "prom", na.rm = T)){
+        sum(rfcat == "prev", na.rm = T)/n()
+      } else if(sum(rfcat == "prev", na.rm = T) < sum(rfcat == "prom", na.rm = T)){
+        sum(rfcat == "prom", na.rm = T)/n()
+      } else .5) %>%
+  ungroup()
+
+# Calculate probability of being categorized as the winning motive
+mf <- mf %>% 
+  group_by(stim) %>%
+  mutate(winningtc_prob = if(sum(tccat == "truth", na.rm = T) > sum(tccat == "control", na.rm = T)){
+        sum(tccat == "truth", na.rm = T)/n()
+      } else if(sum(tccat == "truth", na.rm = T) < sum(tccat == "control", na.rm = T)){
+        sum(tccat == "control", na.rm = T)/n()
+      } else .5) %>%
+  ungroup()
+
+# Calculate participant-specific sorting task summary stats, and merge into mfraw
+mfst <- mf %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth") %>%
+  group_by(id, stimtype) %>%
+  summarise(subpromprob = mean(rfcat.d, na.rm= T), 
+            subcontrolprob = mean(tccat.d, na.rm= T),
+            subrflogrt = mean(rflogrt, na.rm= T),
+            subtclogrt = mean(tclogrt, na.rm= T))
+mfst_promprob <- mfst %>%
+  dplyr::select(id, stimtype, subpromprob) %>%
+  spread(key = stimtype, value = subpromprob) %>%
+  dplyr::rename(promprob_prevcontrol = prevcontrol, promprob_prevtruth = prevtruth,
+                promprob_promcontrol = promcontrol, promprob_promtruth = promtruth) %>%
+  mutate(promprob_prev = (promprob_prevcontrol + promprob_prevtruth) / 2,
+         promprob_prom = (promprob_promcontrol + promprob_promtruth) / 2)
+mfst_controlprob <- mfst %>%
+  dplyr::select(id, stimtype, subcontrolprob) %>%
+  spread(key = stimtype, value = subcontrolprob) %>%
+  dplyr::rename(controlprob_prevcontrol = prevcontrol, controlprob_prevtruth = prevtruth,
+                controlprob_promcontrol = promcontrol, controlprob_promtruth = promtruth) %>%
+  mutate(controlprob_control = (controlprob_prevcontrol + controlprob_promcontrol) / 2,
+         controlprob_truth = (controlprob_prevtruth + controlprob_promtruth) / 2)
+mfst_rflogrt <- mfst %>%
+  dplyr::select(id, stimtype, subrflogrt) %>%
+  spread(key = stimtype, value = subrflogrt) %>%
+  dplyr::rename(rflogrt_prevcontrol = prevcontrol, rflogrt_prevtruth = prevtruth,
+                rflogrt_promcontrol = promcontrol, rflogrt_promtruth = promtruth) %>%
+  mutate(rflogrt_prev = (rflogrt_prevcontrol + rflogrt_prevtruth) / 2,
+         rflogrt_prom = (rflogrt_promcontrol + rflogrt_promtruth) / 2)
+mfst_tclogrt <- mfst %>%
+  dplyr::select(id, stimtype, subtclogrt) %>%
+  spread(key = stimtype, value = subtclogrt) %>%
+  dplyr::rename(tclogrt_prevcontrol = prevcontrol, tclogrt_prevtruth = prevtruth,
+                tclogrt_promcontrol = promcontrol, tclogrt_promtruth = promtruth) %>%
+  mutate(tclogrt_control = (tclogrt_prevcontrol + tclogrt_promcontrol) / 2,
+         tclogrt_truth = (tclogrt_prevtruth + tclogrt_promtruth) / 2)
+mfst <- merge(mfst_promprob, mfst_controlprob)
+mfst <- merge(mfst, mfst_rflogrt)
+mfst <- merge(mfst, mfst_tclogrt)
+mfraw <- merge(mfraw, mfst)
+rm(mfst, mfst_promprob, mfst_controlprob, mfst_rflogrt, mfst_tclogrt)
+
+# Mean-center predictors of interest
+mf$length <- nchar(as.character(mf$stim))
+mf$length.s <- scale(mf$length)
+mf$freq.s <- scale(mf$freq)
+
+# Effect-code stimulus RF and TC
+mf$stimrf.d[mf$stimrf == "prev"] <- 0
+mf$stimrf.d[mf$stimrf == "prom"] <- 1
+mf$stimrf.e[mf$stimrf == "prev"] <- -.5
+mf$stimrf.e[mf$stimrf == "prom"] <- .5
+mf$stimtc.d[mf$stimtc == "truth"] <- 0
+mf$stimtc.d[mf$stimtc == "control"] <- 1
+mf$stimtc.e[mf$stimtc == "truth"] <- -.5
+mf$stimtc.e[mf$stimtc == "control"] <- .5
+```
+
+``` {r clean_eng}
+### CLEANING SEPARATE DATAFRAME FOR ENGLISH NATIVE SPEAKER PARTICIPANTS ONLY
+
+## RESPONSE-LATENCY-BASED MOTIVATION MEASURES: REGULATORY FOCUS STRENGTH
+
+# Checking on people who repeated attributes
+rfattributes_eng <- dplyr::select(mfraw_eng, id, ideal1, ideal2, ideal3, ought1, ought2, ought3)
+rfattributes_eng$ideal1 <- str_to_lower(rfattributes_eng$ideal1)
+rfattributes_eng$ideal2 <- str_to_lower(rfattributes_eng$ideal2)
+rfattributes_eng$ideal3 <- str_to_lower(rfattributes_eng$ideal3)
+rfattributes_eng$ought1 <- str_to_lower(rfattributes_eng$ought1)
+rfattributes_eng$ought2 <- str_to_lower(rfattributes_eng$ought2)
+rfattributes_eng$ought3 <- str_to_lower(rfattributes_eng$ought3)
+rfattributes_eng$excl_rfs[rfattributes_eng$id == 7 | rfattributes_eng$id == 11 | rfattributes_eng$id == 16 | rfattributes_eng$id == 42] <- 1 # Flag IDs to be excluded from RFS analyses because measure was not completed properly
+rfattributes_eng <- dplyr::select(rfattributes_eng, id, excl_rfs)
+mfraw_eng <- merge(mfraw_eng, rfattributes_eng, by = "id")
+rm(rfattributes_eng)
+
+# Subset data for participants for whom we can calculate RF-Strength scores
+mfraw_rfs_eng <- dplyr::filter(mfraw_eng, is.na(excl_rfs)) # n = 52
+
+# Log-adjust promotion / prevention timer scores to normalize the distributions
+mfraw_rfs_eng$ought1.timer.log <- log(mfraw_rfs_eng$ought1.timer)
+mfraw_rfs_eng$ought1r.timer.log <- log(mfraw_rfs_eng$ought1r.timer)
+mfraw_rfs_eng$ought1a.timer.log <- log(mfraw_rfs_eng$ought1a.timer)
+mfraw_rfs_eng$ought2.timer.log <- log(mfraw_rfs_eng$ought2.timer)
+mfraw_rfs_eng$ought2r.timer.log <- log(mfraw_rfs_eng$ought2r.timer)
+mfraw_rfs_eng$ought2a.timer.log <- log(mfraw_rfs_eng$ought2a.timer)
+mfraw_rfs_eng$ought3.timer.log <- log(mfraw_rfs_eng$ought3.timer)
+mfraw_rfs_eng$ought3r.timer.log <- log(mfraw_rfs_eng$ought3r.timer)
+mfraw_rfs_eng$ought3a.timer.log <- log(mfraw_rfs_eng$ought3a.timer)
+mfraw_rfs_eng$ideal1.timer.log <- log(mfraw_rfs_eng$ideal1.timer)
+mfraw_rfs_eng$ideal1r.timer.log <- log(mfraw_rfs_eng$ideal1r.timer)
+mfraw_rfs_eng$ideal1a.timer.log <- log(mfraw_rfs_eng$ideal1a.timer)
+mfraw_rfs_eng$ideal2.timer.log <- log(mfraw_rfs_eng$ideal2.timer)
+mfraw_rfs_eng$ideal2r.timer.log <- log(mfraw_rfs_eng$ideal2r.timer)
+mfraw_rfs_eng$ideal2a.timer.log <- log(mfraw_rfs_eng$ideal2a.timer)
+mfraw_rfs_eng$ideal3.timer.log <- log(mfraw_rfs_eng$ideal3.timer)
+mfraw_rfs_eng$ideal3r.timer.log <- log(mfraw_rfs_eng$ideal3r.timer)
+mfraw_rfs_eng$ideal3a.timer.log <- log(mfraw_rfs_eng$ideal3a.timer)
+
+# Calculate prevention and promotion strength
+mfraw_rfs_eng$prev1.str <- mfraw_rfs_eng$ought1.timer.log + mfraw_rfs_eng$ought1r.timer.log + mfraw_rfs_eng$ought1a.timer.log
+mfraw_rfs_eng$prev2.str <- mfraw_rfs_eng$ought2.timer.log + mfraw_rfs_eng$ought2r.timer.log + mfraw_rfs_eng$ought2a.timer.log
+mfraw_rfs_eng$prev3.str <- mfraw_rfs_eng$ought3.timer.log + mfraw_rfs_eng$ought3r.timer.log + mfraw_rfs_eng$ought3a.timer.log
+mfraw_rfs_eng$prom1.str <- mfraw_rfs_eng$ideal1.timer.log + mfraw_rfs_eng$ideal1r.timer.log + mfraw_rfs_eng$ideal1a.timer.log
+mfraw_rfs_eng$prom2.str <- mfraw_rfs_eng$ideal2.timer.log + mfraw_rfs_eng$ideal2r.timer.log + mfraw_rfs_eng$ideal2a.timer.log
+mfraw_rfs_eng$prom3.str <- mfraw_rfs_eng$ideal3.timer.log + mfraw_rfs_eng$ideal3r.timer.log + mfraw_rfs_eng$ideal3a.timer.log
+
+# In determining RF strength, reverse the signs so higher = stronger
+mfraw_rfs_eng$prev.str <- -1 * (mfraw_rfs_eng$prev1.str + mfraw_rfs_eng$prev2.str + mfraw_rfs_eng$prev3.str)/3
+mfraw_rfs_eng$prom.str <- -1 * (mfraw_rfs_eng$prom1.str + mfraw_rfs_eng$prom2.str + mfraw_rfs_eng$prom3.str)/3
+
+# Replacing -Inf with NA
+mfraw_rfs_eng$prev.str[!is.finite(mfraw_rfs_eng$prev.str)] <- NA
+mfraw_rfs_eng$prom.str[!is.finite(mfraw_rfs_eng$prom.str)] <- NA
+
+# Calculate mean-centered and scaled prevention strength and promotion strength scores
+mfraw_rfs_eng$prev.strc <- mfraw_rfs_eng$prev.str
+mfraw_rfs_eng$prev.strc <- as.numeric(scale(mfraw_rfs_eng$prev.strc, center = TRUE, scale = FALSE))
+mfraw_rfs_eng$prev.strcs <- as.numeric(scale(mfraw_rfs_eng$prev.strc, center = TRUE, scale = TRUE))
+mfraw_rfs_eng$prom.strc <- mfraw_rfs_eng$prom.str
+mfraw_rfs_eng$prom.strc <- as.numeric(scale(mfraw_rfs_eng$prom.strc, center = TRUE, scale = FALSE))
+mfraw_rfs_eng$prom.strcs <- as.numeric(scale(mfraw_rfs_eng$prom.strc, center = TRUE, scale = TRUE))
+
+# Calculate promotion strength dominance scores and mean-center them
+mfraw_rfs_eng$promdom.str <- mfraw_rfs_eng$prom.str - mfraw_rfs_eng$prev.str
+mfraw_rfs_eng$promdom.strc <- mfraw_rfs_eng$promdom.str
+mfraw_rfs_eng$promdom.strc <- as.numeric(scale(mfraw_rfs_eng$promdom.strc, center = TRUE, scale = FALSE))
+
+# Select newly calculated columns in RFS version of dataframe and merge back into mfraw
+mfraw_rfs_eng <- dplyr::select(mfraw_rfs_eng, id, ideal1.timer.log, ideal1r.timer.log, ideal1a.timer.log, ideal2.timer.log, ideal2r.timer.log, ideal2a.timer.log, ideal3.timer.log, ideal3r.timer.log, ideal3a.timer.log, ought1.timer.log, ought1r.timer.log, ought1a.timer.log, ought2.timer.log, ought2r.timer.log, ought2a.timer.log, ought3.timer.log, ought3r.timer.log, ought3a.timer.log, prev.str, prom.str, prev.strc, prev.strcs, prom.strc, prom.strcs, promdom.str, promdom.strc)
+mfraw_eng <- merge(mfraw_eng, mfraw_rfs_eng, by = "id", all.x = T, all.y = F)
+rm(mfraw_rfs_eng)
+
+## QUESTIONNAIRE-BASED MOTIVATION MEASURES: REGULATORY FOCUS PRIDE AND REGULATORY MODE
+
+# Calculate prevention pride, promotion pride, assessment, and locomotion scores
+mfraw_eng$prev.eff <- ((6-mfraw_eng$rfq_2) + (6-mfraw_eng$rfq_4) + mfraw_eng$rfq_5 + (6-mfraw_eng$rfq_6) + (6-mfraw_eng$rfq_8))/5
+mfraw_eng$prom.eff <- ((6-mfraw_eng$rfq_1) + mfraw_eng$rfq_3 + mfraw_eng$rfq_7 + (6-mfraw_eng$rfq_9) + mfraw_eng$rfq_10 + (6-mfraw_eng$rfq_11))/6
+mfraw_eng$ass <- ((7-mfraw_eng$rmq_2) + mfraw_eng$rmq_6 + mfraw_eng$rmq_7 + mfraw_eng$rmq_9 + (7-mfraw_eng$rmq_10) + mfraw_eng$rmq_11 + mfraw_eng$rmq_15 + mfraw_eng$rmq_19 + mfraw_eng$rmq_20 + mfraw_eng$rmq_22 + (7-mfraw_eng$rmq_27) + mfraw_eng$rmq_30)/12
+mfraw_eng$loc <- (mfraw_eng$rmq_1 + mfraw_eng$rmq_3 + mfraw_eng$rmq_4 + mfraw_eng$rmq_5 + mfraw_eng$rmq_8 + mfraw_eng$rmq_16 + mfraw_eng$rmq_21 + mfraw_eng$rmq_25 + mfraw_eng$rmq_28 + mfraw_eng$rmq_29 + (7-mfraw_eng$rmq_13) + (7-mfraw_eng$rmq_24))/12
+
+# Calculate mean-centered and scaled prevention pride, promotion pride, assessment, and locomotion scores
+mfraw_eng$prev.effc <- mfraw_eng$prev.eff
+mfraw_eng$prev.effc <- as.numeric(scale(mfraw_eng$prev.effc, center = TRUE, scale = FALSE))
+mfraw_eng$prev.effcs <- as.numeric(scale(mfraw_eng$prev.effc, center = TRUE, scale = TRUE))
+mfraw_eng$prom.effc <- mfraw_eng$prom.eff
+mfraw_eng$prom.effc <- as.numeric(scale(mfraw_eng$prom.effc, center = TRUE, scale = FALSE))
+mfraw_eng$prom.effcs <- as.numeric(scale(mfraw_eng$prom.effc, center = TRUE, scale = TRUE))
+mfraw_eng$amc <- mfraw_eng$ass
+mfraw_eng$amc <- as.numeric(scale(mfraw_eng$amc, center = TRUE, scale = FALSE))
+mfraw_eng$amcs <- as.numeric(scale(mfraw_eng$amc, center = TRUE, scale = TRUE))
+mfraw_eng$lmc <- mfraw_eng$loc
+mfraw_eng$lmc <- as.numeric(scale(mfraw_eng$lmc, center = TRUE, scale = FALSE))
+mfraw_eng$lmcs <- as.numeric(scale(mfraw_eng$lmc, center = TRUE, scale = TRUE))
+
+# Calculate promotion pride and locomotion dominance scores and mean-center them
+mfraw_eng$promdom.eff <- mfraw_eng$prom.eff - mfraw_eng$prev.eff
+mfraw_eng$promdom.effc <- mfraw_eng$promdom.eff
+mfraw_eng$promdom.effc <- as.numeric(scale(mfraw_eng$promdom.effc, center = TRUE, scale = FALSE))
+mfraw_eng$locdom <- mfraw_eng$loc - mfraw_eng$ass
+mfraw_eng$locdomc <- mfraw_eng$locdom
+mfraw_eng$locdomc <- as.numeric(scale(mfraw_eng$locdomc, center = TRUE, scale = FALSE))
+
+## SORTING MEASURES (PREP)
+
+# Create column indicating which sorting categories were on the left (i.e., "E" key)
+mfraw_eng$rfleft <- ifelse(mfraw_eng$prevL_prac != "", "prev", "prom")
+mfraw_eng$tcleft <- ifelse(mfraw_eng$truthL_prac != "", "truth", "control")
+
+# Effect-code "left" variables
+mfraw_eng$rfleft.e <- 0
+mfraw_eng$rfleft.e[mfraw_eng$rfleft == "prev"] <- -.5
+mfraw_eng$rfleft.e[mfraw_eng$rfleft == "prom"] <- .5
+mfraw_eng$tcleft.e <- 0
+mfraw_eng$tcleft.e[mfraw_eng$tcleft == "truth"] <- -.5
+mfraw_eng$tcleft.e[mfraw_eng$tcleft == "control"] <- .5
+
+# Drop unneeded factor levels resulting from old Qualtrics headers
+mfraw_eng <- droplevels(mfraw_eng)
+
+## SORTING MEASURES: PREVENTION VS. PROMOTION
+
+# Check for people who skipped RF sorting task or who have nonvalid data
+# Are there 3 "END" characters at end of string? If not, did not complete task; mark skipped
+mfraw_eng$p.prevL_prac <- substring(mfraw_eng$prevL_prac, (stringr::str_length(mfraw_eng$prevL_prac)-2), stringr::str_length(mfraw_eng$prevL_prac)) != "END"
+mfraw_eng$p.prevL_sort <- substring(mfraw_eng$prevL_sort, (stringr::str_length(mfraw_eng$prevL_sort)-2), stringr::str_length(mfraw_eng$prevL_sort)) != "END"
+mfraw_eng$p.promL_prac <- substring(mfraw_eng$promL_prac, (stringr::str_length(mfraw_eng$promL_prac)-2), stringr::str_length(mfraw_eng$promL_prac)) != "END"
+mfraw_eng$p.promL_sort <- substring(mfraw_eng$promL_sort, (stringr::str_length(mfraw_eng$promL_sort)-2), stringr::str_length(mfraw_eng$promL_sort)) != "END"
+
+mfraw_eng$prevL_prac[mfraw_eng$p.prevL_prac] <- ""
+mfraw_eng$prevL_sort[mfraw_eng$p.prevL_sort] <- ""
+mfraw_eng$promL_prac[mfraw_eng$p.promL_prac] <- ""
+mfraw_eng$promL_sort[mfraw_eng$p.promL_sort] <- ""
+
+# Mark people who skipped task as such
+mfraw_eng$skipped.prevL_prac <- mfraw_eng$prevL_prac == ""
+mfraw_eng$skipped.prevL_sort <- mfraw_eng$prevL_sort == ""
+mfraw_eng$skipped.promL_prac <- mfraw_eng$promL_prac == ""
+mfraw_eng$skipped.promL_sort <- mfraw_eng$promL_sort == ""
+
+# Check integrity of people who completed task
+mfraw_eng$p.prevL_prac <- (mfraw_eng$p.prevL_prac & !mfraw_eng$skipped.prevL_prac)
+mfraw_eng$p.prevL_sort <- (mfraw_eng$p.prevL_sort & !mfraw_eng$skipped.prevL_sort)
+mfraw_eng$p.promL_prac <- (mfraw_eng$p.promL_prac & !mfraw_eng$skipped.promL_prac)
+mfraw_eng$p.promL_sort <- (mfraw_eng$p.promL_sort & !mfraw_eng$skipped.promL_sort)
+  
+check.me <- function(temp){
+  temp <- stringr::str_replace_all(temp, "END", "")
+  temp <- stringr::str_replace_all(temp, ",", "")  
+  temp <- stringr::str_replace_all(temp, "C", "")  
+  temp <- stringr::str_replace_all(temp, "I", "")  
+  temp <- stringr::str_replace_all(temp, "0", "")  
+  temp <- stringr::str_replace_all(temp, "1", "")  
+  temp <- stringr::str_replace_all(temp, "2", "")  
+  temp <- stringr::str_replace_all(temp, "3", "")  
+  temp <- stringr::str_replace_all(temp, "4", "")  
+  temp <- stringr::str_replace_all(temp, "5", "")  
+  temp <- stringr::str_replace_all(temp, "6", "")  
+  temp <- stringr::str_replace_all(temp, "7", "")  
+  temp <- stringr::str_replace_all(temp, "8", "")  
+  temp <- stringr::str_replace_all(temp, "9", "")
+  return(!temp=="")
+}
+
+mfraw_eng$p.prevL_prac <- as.logical(mfraw_eng$p.prevL_prac + check.me(mfraw_eng$prevL_prac))
+mfraw_eng$p.prevL_sort <- as.logical(mfraw_eng$p.prevL_sort + check.me(mfraw_eng$prevL_sort))
+mfraw_eng$p.promL_prac <- as.logical(mfraw_eng$p.promL_prac + check.me(mfraw_eng$promL_prac))
+mfraw_eng$p.promL_sort <- as.logical(mfraw_eng$p.promL_sort + check.me(mfraw_eng$promL_sort))
+rm(check.me)
+mfraw_eng$p.prt <- as.logical(mfraw_eng$p.prevL_prac + mfraw_eng$p.prevL_sort + mfraw_eng$p.promL_prac + mfraw_eng$p.promL_sort)
+mfraw_eng$rfflag <- mfraw_eng$p.prt == TRUE
+mfraw_eng$prevL_prac[mfraw_eng$rfflag] <- ""
+mfraw_eng$prevL_sort[mfraw_eng$rfflag] <- ""
+mfraw_eng$promL_prac[mfraw_eng$rfflag] <- ""
+mfraw_eng$promL_sort[mfraw_eng$rfflag] <- ""
+
+# Update skip counts to reflect number of validly completed tasks
+mfraw_eng$skipped.prevL_prac <- mfraw_eng$prevL_prac == ""
+mfraw_eng$skipped.prevL_sort <- mfraw_eng$prevL_sort == ""
+mfraw_eng$skipped.promL_prac <- mfraw_eng$promL_prac == ""
+mfraw_eng$skipped.promL_sort <- mfraw_eng$promL_sort == ""
+
+# Remove flagging columns
+mfraw_eng$p.prevL_prac <- NULL
+mfraw_eng$p.prevL_sort <- NULL
+mfraw_eng$p.promL_prac <- NULL
+mfraw_eng$p.promL_sort <- NULL
+mfraw_eng$skipped.prevL_prac <- NULL
+mfraw_eng$skipped.prevL_sort <- NULL
+mfraw_eng$skipped.promL_prac <- NULL
+mfraw_eng$skipped.promL_sort <- NULL
+mfraw_eng$p.prt <- NULL
+
+# Convert strings to lists
+mfraw_eng$prevL_prac <- strsplit(mfraw_eng$prevL_prac, ',')
+mfraw_eng$promL_prac <- strsplit(mfraw_eng$promL_prac, ',')
+mfraw_eng$prevL_sort <- strsplit(mfraw_eng$prevL_sort, ',')
+mfraw_eng$promL_sort <- strsplit(mfraw_eng$promL_sort, ',')
+
+# Unnest
+mfprevL_prac <- unnest(mfraw_eng, prevL_prac)
+mfpromL_prac <- unnest(mfraw_eng, promL_prac)
+mfprevL_sort <- unnest(mfraw_eng, prevL_sort)
+mfpromL_sort <- unnest(mfraw_eng, promL_sort)
+
+# Create RF trial type column
+mfprevL_prac$rftrialtype <- "prevL_prac"
+mfpromL_prac$rftrialtype <- "promL_prac"
+mfprevL_sort$rftrialtype <- "prevL_sort"
+mfpromL_sort$rftrialtype <- "promL_sort"
+
+# Rename data field in each to "data"
+mfprevL_prac <- dplyr::rename(mfprevL_prac, data = prevL_prac)
+mfpromL_prac <- dplyr::rename(mfpromL_prac, data = promL_prac)
+mfprevL_sort <- dplyr::rename(mfprevL_sort, data = prevL_sort)
+mfpromL_sort <- dplyr::rename(mfpromL_sort, data = promL_sort)
+
+# Delete "END" trials
+mfprevL_prac <- mfprevL_prac[!(mfprevL_prac$data == "END"),]
+mfprevL_sort <- mfprevL_sort[!(mfprevL_sort$data == "END"),]
+mfpromL_prac <- mfpromL_prac[!(mfpromL_prac$data == "END"),]
+mfpromL_sort <- mfpromL_sort[!(mfpromL_sort$data == "END"),]
+
+# Number RF trials - 39 total (1-6 prac, 7-39 sort)
+mfprevL_prac <- mfprevL_prac %>%
+  group_by(id) %>%
+  mutate(rftrial = 1:n()) %>%
+  ungroup()
+mfpromL_prac <- mfpromL_prac %>%
+  group_by(id) %>%
+  mutate(rftrial = 1:n()) %>%
+  ungroup()
+mfprevL_sort <- mfprevL_sort %>%
+  group_by(id) %>%
+  mutate(rftrial = 7:(n()+6)) %>%
+  ungroup()
+mfpromL_sort <- mfpromL_sort %>%
+  group_by(id) %>%
+  mutate(rftrial = 7:(n()+6)) %>%
+  ungroup()
+
+# Merge dataframes
+mf_eng <- merge(mfprevL_prac, mfpromL_prac, all = T)
+mf_eng <- merge(mf_eng, mfprevL_sort, all = T)
+mf_eng <- merge(mf_eng, mfpromL_sort, all = T)
+
+# Rename data column
+mf_eng <- dplyr::rename(mf_eng, rfdata = data)
+
+# Extract stimulus number from rfdata column
+mf_eng$stimnum <- 0
+mf_eng$stimnum <- ifelse(str_count(mf_eng$rfdata,"C") == 1, word(mf_eng$rfdata,1,sep = "C"), mf_eng$stimnum)
+mf_eng$stimnum <- ifelse(str_count(mf_eng$rfdata,"I") == 1, word(mf_eng$rfdata,1,sep = "I"), mf_eng$stimnum)
+mf_eng$stimnum <- as.numeric(mf_eng$stimnum)
+
+# Extract if RF sorting was as predicted from rfdata column
+mf_eng$rfaspred <- 0
+mf_eng$rfaspred <- ifelse(str_count(mf_eng$rfdata,"C") == 1, 1, mf_eng$rfaspred)
+
+# Extract RF reaction time from rfdata column
+mf_eng$rfrt <- 0
+mf_eng$rfrt <- ifelse(str_count(mf_eng$rfdata,"C") == 1, word(mf_eng$rfdata,2,sep = "C"), mf_eng$rfrt)
+mf_eng$rfrt <- ifelse(str_count(mf_eng$rfdata,"I") == 1, word(mf_eng$rfdata,2,sep = "I"), mf_eng$rfrt)
+mf_eng$rfrt <- as.numeric(mf_eng$rfrt)
+
+# Remove old dataframes
+rm(mfprevL_prac)
+rm(mfpromL_prac)
+rm(mfprevL_sort)
+rm(mfpromL_sort)
+
+# Mean-center and scale trial for later analyses
+mf_eng$rftrialc <- mf_eng$rftrial
+mf_eng$rftrialc <- as.numeric(scale(mf_eng$rftrialc, center = TRUE, scale = FALSE))
+mf_eng$rftrialcs <- mf_eng$rftrial
+mf_eng$rftrialcs <- as.numeric(scale(mf_eng$rftrialcs, center = TRUE, scale = TRUE))
+
+# Flag and remove trials that are too short or too long (under 250 ms or over 10K ms)
+mf_eng$rfflag[mf_eng$rfrt < 250 | mf_eng$rfrt > 10000] <- TRUE
+removedtrials_eng <- nrow(subset(mf_eng, rfflag == 1)) # 10 trials removed for being too short or too long
+mf_eng <- mf_eng[!(mf_eng$rfflag == TRUE),] # n = 2167 trials remaining in dataset
+
+# Bring in stimulus-specific details (e.g., stimtype, predicted RF and TC, frequency) through merge with stimlist
+mf_eng <- merge(mf_eng, stimlist, all = T)
+
+# Log-transform reaction times
+mf_eng$rflogrt <- log(mf_eng$rfrt)
+
+# Label category chosen (promotion vs. prevention)
+mf_eng$rfcat <- as.character("")
+mf_eng$rfcat[mf_eng$stimrf_pred == "prom" & mf_eng$rfaspred == 1] <- "prom"
+mf_eng$rfcat[mf_eng$stimrf_pred == "prom" & mf_eng$rfaspred == 0] <- "prev"
+mf_eng$rfcat[mf_eng$stimrf_pred == "prev" & mf_eng$rfaspred == 1] <- "prev"
+mf_eng$rfcat[mf_eng$stimrf_pred == "prev" & mf_eng$rfaspred == 0] <- "prom"
+
+# Dummy-code promotion-prevention categorization
+mf_eng$rfcat.d <- 0
+mf_eng$rfcat.d[mf_eng$rfcat == "prom"] <- 1
+
+# Effect-code promotion-prevention categorization
+mf_eng$rfcat.e <- 0
+mf_eng$rfcat.e[mf_eng$rfcat == "prev"] <- -.5
+mf_eng$rfcat.e[mf_eng$rfcat == "prom"] <- .5
+
+## SORTING MEASURES: TRUTH VS. CONTROL
+
+# Check for people who skipped RF sorting task or who have nonvalid data
+# Are there 3 "END" characters at end of string? If not, did not complete task; mark skipped
+mfraw_eng$p.truthL_prac <- substring(mfraw_eng$truthL_prac, (stringr::str_length(mfraw_eng$truthL_prac)-2), stringr::str_length(mfraw_eng$truthL_prac)) != "END"
+mfraw_eng$p.truthL_sort <- substring(mfraw_eng$truthL_sort, (stringr::str_length(mfraw_eng$truthL_sort)-2), stringr::str_length(mfraw_eng$truthL_sort)) != "END"
+mfraw_eng$p.controlL_prac <- substring(mfraw_eng$controlL_prac, (stringr::str_length(mfraw_eng$controlL_prac)-2), stringr::str_length(mfraw_eng$controlL_prac)) != "END"
+mfraw_eng$p.controlL_sort <- substring(mfraw_eng$controlL_sort, (stringr::str_length(mfraw_eng$controlL_sort)-2), stringr::str_length(mfraw_eng$controlL_sort)) != "END"
+
+mfraw_eng$truthL_prac[mfraw_eng$p.truthL_prac] <- ""
+mfraw_eng$truthL_sort[mfraw_eng$p.truthL_sort] <- ""
+mfraw_eng$controlL_prac[mfraw_eng$p.controlL_prac] <- ""
+mfraw_eng$controlL_sort[mfraw_eng$p.controlL_sort] <- ""
+
+# Mark people who skipped task as such
+mfraw_eng$skipped.truthL_prac <- mfraw_eng$truthL_prac == ""
+mfraw_eng$skipped.truthL_sort <- mfraw_eng$truthL_sort == ""
+mfraw_eng$skipped.controlL_prac <- mfraw_eng$controlL_prac == ""
+mfraw_eng$skipped.controlL_sort <- mfraw_eng$controlL_sort == ""
+
+# Check integrity of people who completed task
+mfraw_eng$p.truthL_prac <- (mfraw_eng$p.truthL_prac & !mfraw_eng$skipped.truthL_prac)
+mfraw_eng$p.truthL_sort <- (mfraw_eng$p.truthL_sort & !mfraw_eng$skipped.truthL_sort)
+mfraw_eng$p.controlL_prac <- (mfraw_eng$p.controlL_prac & !mfraw_eng$skipped.controlL_prac)
+mfraw_eng$p.controlL_sort <- (mfraw_eng$p.controlL_sort & !mfraw_eng$skipped.controlL_sort)
+  
+check.me <- function(temp){
+  temp <- stringr::str_replace_all(temp, "END", "")
+  temp <- stringr::str_replace_all(temp, ",", "")  
+  temp <- stringr::str_replace_all(temp, "C", "")  
+  temp <- stringr::str_replace_all(temp, "I", "")  
+  temp <- stringr::str_replace_all(temp, "0", "")  
+  temp <- stringr::str_replace_all(temp, "1", "")  
+  temp <- stringr::str_replace_all(temp, "2", "")  
+  temp <- stringr::str_replace_all(temp, "3", "")  
+  temp <- stringr::str_replace_all(temp, "4", "")  
+  temp <- stringr::str_replace_all(temp, "5", "")  
+  temp <- stringr::str_replace_all(temp, "6", "")  
+  temp <- stringr::str_replace_all(temp, "7", "")  
+  temp <- stringr::str_replace_all(temp, "8", "")  
+  temp <- stringr::str_replace_all(temp, "9", "")
+  return(!temp=="")
+}
+
+mfraw_eng$p.truthL_prac <- as.logical(mfraw_eng$p.truthL_prac + check.me(mfraw_eng$truthL_prac))
+mfraw_eng$p.truthL_sort <- as.logical(mfraw_eng$p.truthL_sort + check.me(mfraw_eng$truthL_sort))
+mfraw_eng$p.controlL_prac <- as.logical(mfraw_eng$p.controlL_prac + check.me(mfraw_eng$controlL_prac))
+mfraw_eng$p.controlL_sort <- as.logical(mfraw_eng$p.controlL_sort + check.me(mfraw_eng$controlL_sort))
+rm(check.me)
+mfraw_eng$p.prt <- as.logical(mfraw_eng$p.truthL_prac + mfraw_eng$p.truthL_sort + mfraw_eng$p.controlL_prac + mfraw_eng$p.controlL_sort)
+mfraw_eng$tcflag <- mfraw_eng$p.prt == TRUE
+mfraw_eng$truthL_prac[mfraw_eng$tcflag] <- ""
+mfraw_eng$truthL_sort[mfraw_eng$tcflag] <- ""
+mfraw_eng$controlL_prac[mfraw_eng$tcflag] <- ""
+mfraw_eng$controlL_sort[mfraw_eng$tcflag] <- ""
+
+# Update skip counts to reflect number of validly completed tasks
+mfraw_eng$skipped.truthL_prac <- mfraw_eng$truthL_prac == ""
+mfraw_eng$skipped.truthL_sort <- mfraw_eng$truthL_sort == ""
+mfraw_eng$skipped.controlL_prac <- mfraw_eng$controlL_prac == ""
+mfraw_eng$skipped.controlL_sort <- mfraw_eng$controlL_sort == ""
+
+# Remove flagging columns
+mfraw_eng$p.truthL_prac <- NULL
+mfraw_eng$p.truthL_sort <- NULL
+mfraw_eng$p.controlL_prac <- NULL
+mfraw_eng$p.controlL_sort <- NULL
+mfraw_eng$skipped.truthL_prac <- NULL
+mfraw_eng$skipped.truthL_sort <- NULL
+mfraw_eng$skipped.controlL_prac <- NULL
+mfraw_eng$skipped.controlL_sort <- NULL
+mfraw_eng$p.prt <- NULL
+
+# Convert strings to lists
+mfraw_eng$truthL_prac <- strsplit(mfraw_eng$truthL_prac, ',')
+mfraw_eng$controlL_prac <- strsplit(mfraw_eng$controlL_prac, ',')
+mfraw_eng$truthL_sort <- strsplit(mfraw_eng$truthL_sort, ',')
+mfraw_eng$controlL_sort <- strsplit(mfraw_eng$controlL_sort, ',')
+
+# Unnest
+mftruthL_prac <- unnest(mfraw_eng, truthL_prac)
+mfcontrolL_prac <- unnest(mfraw_eng, controlL_prac)
+mftruthL_sort <- unnest(mfraw_eng, truthL_sort)
+mfcontrolL_sort <- unnest(mfraw_eng, controlL_sort)
+
+# Create TC trial type column
+mftruthL_prac$tctrialtype <- "truthL_prac"
+mfcontrolL_prac$tctrialtype <- "controlL_prac"
+mftruthL_sort$tctrialtype <- "truthL_sort"
+mfcontrolL_sort$tctrialtype <- "controlL_sort"
+
+# Rename data field in each to "data"
+mftruthL_prac <- dplyr::rename(mftruthL_prac, data = truthL_prac)
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, data = controlL_prac)
+mftruthL_sort <- dplyr::rename(mftruthL_sort, data = truthL_sort)
+mfcontrolL_sort <- dplyr::rename(mfcontrolL_sort, data = controlL_sort)
+
+# Delete "END" trials
+mftruthL_prac <- mftruthL_prac[!(mftruthL_prac$data == "END"),]
+mftruthL_sort <- mftruthL_sort[!(mftruthL_sort$data == "END"),]
+mfcontrolL_prac <- mfcontrolL_prac[!(mfcontrolL_prac$data == "END"),]
+mfcontrolL_sort <- mfcontrolL_sort[!(mfcontrolL_sort$data == "END"),]
+
+# Number TC trials - 39 total (1-6 prac, 7-39 sort)
+mftruthL_prac <- mftruthL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+mfcontrolL_prac <- mfcontrolL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+mftruthL_sort <- mftruthL_sort %>%
+  group_by(id) %>%
+  mutate(tctrial = 7:(n()+6)) %>%
+  ungroup()
+mfcontrolL_sort <- mfcontrolL_sort %>%
+  group_by(id) %>%
+  mutate(tctrial = 7:(n()+6)) %>%
+  ungroup()
+
+# Rename data column
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, tcdata = data)
+
+# Extract stimulus number from tcdata column
+mfcontrolL_prac$stimnum <- 0
+mfcontrolL_prac$stimnum <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, word(mfcontrolL_prac$tcdata,1,sep = "C"), mfcontrolL_prac$stimnum)
+mfcontrolL_prac$stimnum <- ifelse(str_count(mfcontrolL_prac$tcdata,"I") == 1, word(mfcontrolL_prac$tcdata,1,sep = "I"), mfcontrolL_prac$stimnum)
+mfcontrolL_prac$stimnum <- as.numeric(mfcontrolL_prac$stimnum)
+
+# Extract if TC sorting was as predicted from tcdata column
+mfcontrolL_prac$tcaspred <- 0
+mfcontrolL_prac$tcaspred <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, 1, mfcontrolL_prac$tcaspred)
+
+# Extract RF reaction time from tcdata column
+mfcontrolL_prac$tcrt <- 0
+mfcontrolL_prac$tcrt <- ifelse(str_count(mfcontrolL_prac$tcdata,"C") == 1, word(mfcontrolL_prac$tcdata,2,sep = "C"), mfcontrolL_prac$tcrt)
+mfcontrolL_prac$tcrt <- ifelse(str_count(mfcontrolL_prac$tcdata,"I") == 1, word(mfcontrolL_prac$tcdata,2,sep = "I"), mfcontrolL_prac$tcrt)
+mfcontrolL_prac$tcrt <- as.numeric(mfcontrolL_prac$tcrt)
+
+# In mfcontrolL_prac dataframe, keep only trials for practice stimuli (consider: stimnum = 4; inquire: stimnum = 5; investigate: stimnum = 6; control: stimnum = 7; manage: stimnum = 8; operate: stimnum = 9)
+mfcontrolL_prac <- dplyr::filter(mfcontrolL_prac, stimnum == 7 | stimnum == 8 | stimnum == 9 | stimnum == 10 | stimnum == 11 | stimnum == 12)
+
+# Renumber mfcontrolL_prac trials
+mfcontrolL_prac <- mfcontrolL_prac %>%
+  group_by(id) %>%
+  mutate(tctrial = 1:n()) %>%
+  ungroup()
+
+# Delete columns that will be recalculated after merging and rename data column
+mfcontrolL_prac$stimnum <- NULL
+mfcontrolL_prac$tcaspred <- NULL
+mfcontrolL_prac$tcrt <- NULL
+mfcontrolL_prac <- dplyr::rename(mfcontrolL_prac, data = tcdata)
+
+mfcontrolL_prac <- as.data.frame(mfcontrolL_prac)
+
+# Merge dataframes
+mftc_eng <- merge(mftruthL_prac, mfcontrolL_prac, all = T, sort = F)
+mftc_eng <- merge(mftc_eng, mftruthL_sort, all = T, sort = F)
+mftc_eng <- merge(mftc_eng, mfcontrolL_sort, all = T, sort = F)
+
+# Select only the unique columns in this TC-sorting dataframe, plus ID (for merging later on)
+mftc_eng <- dplyr::select(mftc_eng, id, tcflag, data, tctrialtype, tctrial)
+
+# Rename data column
+mftc_eng <- dplyr::rename(mftc_eng, tcdata = data)
+
+# Extract stimulus number from tcdata column
+mftc_eng$stimnum <- 0
+mftc_eng$stimnum <- ifelse(str_count(mftc_eng$tcdata,"C") == 1, word(mftc_eng$tcdata,1,sep = "C"), mftc_eng$stimnum)
+mftc_eng$stimnum <- ifelse(str_count(mftc_eng$tcdata,"I") == 1, word(mftc_eng$tcdata,1,sep = "I"), mftc_eng$stimnum)
+mftc_eng$stimnum <- as.numeric(mftc_eng$stimnum)
+
+# Extract if TC sorting was as predicted from tcdata column
+mftc_eng$tcaspred <- 0
+mftc_eng$tcaspred <- ifelse(str_count(mftc_eng$tcdata,"C") == 1, 1, mftc_eng$tcaspred)
+
+# Extract RF reaction time from tcdata column
+mftc_eng$tcrt <- 0
+mftc_eng$tcrt <- ifelse(str_count(mftc_eng$tcdata,"C") == 1, word(mftc_eng$tcdata,2,sep = "C"), mftc_eng$tcrt)
+mftc_eng$tcrt <- ifelse(str_count(mftc_eng$tcdata,"I") == 1, word(mftc_eng$tcdata,2,sep = "I"), mftc_eng$tcrt)
+mftc_eng$tcrt <- as.numeric(mftc_eng$tcrt)
+
+# Remove old dataframes
+rm(mftruthL_prac)
+rm(mfcontrolL_prac)
+rm(mftruthL_sort)
+rm(mfcontrolL_sort)
+
+# Mean-center and scale trial for later analyses
+mftc_eng$tctrialc <- mftc_eng$tctrial
+mftc_eng$tctrialc <- as.numeric(scale(mftc_eng$tctrialc, center = TRUE, scale = FALSE))
+mftc_eng$tctrialcs <- mftc_eng$tctrial
+mftc_eng$tctrialcs <- as.numeric(scale(mftc_eng$tctrialcs, center = TRUE, scale = TRUE))
+
+# Flag and remove trials that are too short or too long (under 250 ms or over 10K ms)
+mftc_eng$tcflag[mftc_eng$tcrt < 250 | mftc_eng$tcrt > 10000] <- TRUE
+removedtctrials_eng <- nrow(subset(mftc_eng, tcflag == 1)) # 1 trial removed for being too short or too long
+mftc_eng <- mftc_eng[!(mftc_eng$tcflag == TRUE),] # n = 2089 trials remaining in dataset
+
+# Bring in stimulus-specific details (e.g., stimtype, predicted RF and TC, frequency) through merge with stimlist
+mftc_eng <- merge(mftc_eng, stimlist, all = T)
+
+# Log-transform reaction times
+mftc_eng$tclogrt <- log(mftc_eng$tcrt)
+
+# Label category chosen (truth vs. control)
+mftc_eng$tccat <- as.character("")
+mftc_eng$tccat[mftc_eng$stimtc_pred == "control" & mftc_eng$tcaspred == 1] <- "control"
+mftc_eng$tccat[mftc_eng$stimtc_pred == "control" & mftc_eng$tcaspred == 0] <- "truth"
+mftc_eng$tccat[mftc_eng$stimtc_pred == "truth" & mftc_eng$tcaspred == 1] <- "truth"
+mftc_eng$tccat[mftc_eng$stimtc_pred == "truth" & mftc_eng$tcaspred == 0] <- "control"
+
+# Dummy-code truth-control categorization
+mftc_eng$tccat.d <- 0
+mftc_eng$tccat.d[mftc_eng$tccat == "control"] <- 1
+
+# Effect-code truth-control categorization
+mftc_eng$tccat.e <- 0
+mftc_eng$tccat.e[mftc_eng$tccat == "truth"] <- -.5
+mftc_eng$tccat.e[mftc_eng$tccat == "control"] <- .5
+
+# Merge with master MF dataframe and clean up environment
+mf_eng <- merge(mf_eng, mftc_eng, by = c("id", "stim", "stimnum", "stimtype", "stimtc", "stimrf", "stimtc_pred", "stimrf_pred", "freq"), all = T)
+rm(mftc_eng)
+
+## SUMMARY STATS FOR SORTING TASKS
+
+# Calculate probability of being categorized as promotion
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(prom_prob = sum(rfcat == "prom", na.rm = T)/n()) %>%
+  ungroup()
+
+# Calculate probability of being categorized as control
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(control_prob = sum(tccat == "control", na.rm = T)/n()) %>%
+  ungroup()
+
+# Calculate "winning" regulatory focus
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(winningrf = if(sum(rfcat == "prev", na.rm = T) > sum(rfcat == "prom", na.rm = T)){
+     "prev"
+      } else if(sum(rfcat == "prev", na.rm = T) < sum(rfcat == "prom", na.rm = T)){
+       "prom"
+      } else "tie") %>%
+  ungroup()
+
+# Calculate "winning" truth vs. control motive
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(winningtc = if(sum(tccat == "truth", na.rm = T) > sum(tccat == "control", na.rm = T)){
+     "truth"
+      } else if(sum(tccat == "truth", na.rm = T) < sum(tccat == "control", na.rm = T)){
+       "control"
+      } else "tie") %>%
+  ungroup()
+
+# Calculate probability of being categorized as the winning regulatory focus
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(winningrf_prob = if(sum(rfcat == "prev", na.rm = T) > sum(rfcat == "prom", na.rm = T)){
+        sum(rfcat == "prev", na.rm = T)/n()
+      } else if(sum(rfcat == "prev", na.rm = T) < sum(rfcat == "prom", na.rm = T)){
+        sum(rfcat == "prom", na.rm = T)/n()
+      } else .5) %>%
+  ungroup()
+
+# Calculate probability of being categorized as the winning motive
+mf_eng <- mf_eng %>% 
+  group_by(stim) %>%
+  mutate(winningtc_prob = if(sum(tccat == "truth", na.rm = T) > sum(tccat == "control", na.rm = T)){
+        sum(tccat == "truth", na.rm = T)/n()
+      } else if(sum(tccat == "truth", na.rm = T) < sum(tccat == "control", na.rm = T)){
+        sum(tccat == "control", na.rm = T)/n()
+      } else .5) %>%
+  ungroup()
+
+# Calculate participant-specific sorting task summary stats, and merge into mfraw
+mfst_eng <- mf_eng %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth") %>%
+  group_by(id, stimtype) %>%
+  summarise(subpromprob = mean(rfcat.d, na.rm= T), 
+            subcontrolprob = mean(tccat.d, na.rm= T),
+            subrflogrt = mean(rflogrt, na.rm= T),
+            subtclogrt = mean(tclogrt, na.rm= T))
+mfst_promprob_eng <- mfst_eng %>%
+  dplyr::select(id, stimtype, subpromprob) %>%
+  spread(key = stimtype, value = subpromprob) %>%
+  dplyr::rename(promprob_prevcontrol = prevcontrol, promprob_prevtruth = prevtruth,
+                promprob_promcontrol = promcontrol, promprob_promtruth = promtruth) %>%
+  mutate(promprob_prev = (promprob_prevcontrol + promprob_prevtruth) / 2,
+         promprob_prom = (promprob_promcontrol + promprob_promtruth) / 2)
+mfst_controlprob_eng <- mfst_eng %>%
+  dplyr::select(id, stimtype, subcontrolprob) %>%
+  spread(key = stimtype, value = subcontrolprob) %>%
+  dplyr::rename(controlprob_prevcontrol = prevcontrol, controlprob_prevtruth = prevtruth,
+                controlprob_promcontrol = promcontrol, controlprob_promtruth = promtruth) %>%
+  mutate(controlprob_control = (controlprob_prevcontrol + controlprob_promcontrol) / 2,
+         controlprob_truth = (controlprob_prevtruth + controlprob_promtruth) / 2)
+mfst_rflogrt_eng <- mfst_eng %>%
+  dplyr::select(id, stimtype, subrflogrt) %>%
+  spread(key = stimtype, value = subrflogrt) %>%
+  dplyr::rename(rflogrt_prevcontrol = prevcontrol, rflogrt_prevtruth = prevtruth,
+                rflogrt_promcontrol = promcontrol, rflogrt_promtruth = promtruth) %>%
+  mutate(rflogrt_prev = (rflogrt_prevcontrol + rflogrt_prevtruth) / 2,
+         rflogrt_prom = (rflogrt_promcontrol + rflogrt_promtruth) / 2)
+mfst_tclogrt_eng <- mfst_eng %>%
+  dplyr::select(id, stimtype, subtclogrt) %>%
+  spread(key = stimtype, value = subtclogrt) %>%
+  dplyr::rename(tclogrt_prevcontrol = prevcontrol, tclogrt_prevtruth = prevtruth,
+                tclogrt_promcontrol = promcontrol, tclogrt_promtruth = promtruth) %>%
+  mutate(tclogrt_control = (tclogrt_prevcontrol + tclogrt_promcontrol) / 2,
+         tclogrt_truth = (tclogrt_prevtruth + tclogrt_promtruth) / 2)
+mfst_eng <- merge(mfst_promprob_eng, mfst_controlprob_eng)
+mfst_eng <- merge(mfst_eng, mfst_rflogrt_eng)
+mfst_eng <- merge(mfst_eng, mfst_tclogrt_eng)
+mfraw_eng <- merge(mfraw_eng, mfst_eng)
+rm(mfst_eng, mfst_promprob_eng, mfst_controlprob_eng, mfst_rflogrt_eng, mfst_tclogrt_eng)
+
+# Mean-center predictors of interest
+mf_eng$length <- nchar(as.character(mf_eng$stim))
+mf_eng$length.s <- scale(mf_eng$length)
+mf_eng$freq.s <- scale(mf_eng$freq)
+
+# Effect-code stimulus RF and TC
+mf_eng$stimrf.d[mf_eng$stimrf == "prev"] <- 0
+mf_eng$stimrf.d[mf_eng$stimrf == "prom"] <- 1
+mf_eng$stimrf.e[mf_eng$stimrf == "prev"] <- -.5
+mf_eng$stimrf.e[mf_eng$stimrf == "prom"] <- .5
+mf_eng$stimtc.d[mf_eng$stimtc == "truth"] <- 0
+mf_eng$stimtc.d[mf_eng$stimtc == "control"] <- 1
+mf_eng$stimtc.e[mf_eng$stimtc == "truth"] <- -.5
+mf_eng$stimtc.e[mf_eng$stimtc == "control"] <- .5
+```
+
+# Save Cleaned Original Dataset
+
+```{r save}
+# SAVING CLEAN DATASETS
+save(mfraw, mf, nonenglish, nonenglishpct, mfraw_eng, mf_eng, file = "data/RFgoalpursuit_study1b_clean.RData")
+```
+
+# De-Identify Cleaned Dataset
+
+```{r deidentify}
+# REMOVE IP ADDRESSES AND LATITUDE/LONGITUDE FROM ALL DATAFRAMES SO THESE DE-IDENTIFIED DATA CAN BE PUBLICLY SHARED
+mfraw$IPAddress <- NULL
+mf$IPAddress <- NULL
+mfraw$LocationLatitude <- NULL
+mf$LocationLatitude <- NULL
+mfraw$LocationLongitude <- NULL
+mf$LocationLongitude <- NULL
+
+mfraw_eng$IPAddress <- NULL
+mf_eng$IPAddress <- NULL
+mfraw_eng$LocationLatitude <- NULL
+mf_eng$LocationLatitude <- NULL
+mfraw_eng$LocationLongitude <- NULL
+mf_eng$LocationLongitude <- NULL
+```
+
+# Save Cleaned and De-Identified Dataset
+
+```{r save_deidentified}
+# SAVING CLEAN DATASETS
+save(mfraw, mf, nonenglish, nonenglishpct, mfraw_eng, mf_eng, file = "data/RFgoalpursuit_study1b_clean_deidentified.RData")
+```

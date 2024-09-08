@@ -1,0 +1,903 @@
+---
+title: "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities"
+subtitle: "Study 2A: Data Cleaning, Including Removal of Participant Identifiers"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+header-includes:
+   - \usepackage[utf8]{inputenc}
+   - \DeclareUnicodeCharacter{2588}{-}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+# Load Libraries and Themes
+
+```{r libs, echo = TRUE}
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(stringr) # Required for data cleaning
+library(rIP) # Required to filter out fraudulent M-Turk participants
+```
+
+# Import and Clean Data
+
+Please note: Raw dataset should be exported from Qualtrics with the *numeric values* (**not** *choice text*) option selected for the following code to run properly.
+
+```{r clean, echo = TRUE, tidy = TRUE}
+# IMPORT DATA
+mfraw <- read.csv(file="data/RFgoalpursuit_study2a_raw.csv", header = TRUE)
+stimlist <- read.csv(file="data/RFgoalpursuit_study2a_stimlist.csv", header = TRUE)
+
+## PREPARE DATA FOR CLEANING AND ANALYSIS
+
+# Calculate length of all stimuli
+stimlist$length <- nchar(as.character(stimlist$stim))
+
+# Delete two unnecessary additional header rows from Qualtrics export:
+mfraw <- mfraw[-which(mfraw$StartDate == "Start Date"), ] # Repeated header row with column names
+mfraw <- mfraw[-1,] # Header row with Qualtrics code in curly brackets
+
+# Delete rows for participants who did not consent
+mfraw <- mfraw[(mfraw$consent == 1), ] # n = 75
+
+# Add ID column
+mfraw$id <- 1:nrow(mfraw)
+
+# Rename columns for ease of coding
+mfraw <- dplyr::rename(mfraw, duration = Duration..in.seconds.,
+                       ideal1.timer = ideal1.timer_Page.Submit,
+                       ideal2.timer = ideal2.timer_Page.Submit,
+                       ideal3.timer = ideal3.timer_Page.Submit,
+                       ideal4.timer = ideal4.timer_Page.Submit,
+                       ought1.timer = ought1.timer_Page.Submit,
+                       ought2.timer = ought2.timer_Page.Submit,
+                       ought3.timer = ought3.timer_Page.Submit,
+                       ought4.timer = ought4.timer_Page.Submit,
+                       ideal1r.timer = ideal1.rateideal.t_Page.Submit,
+                       ideal2r.timer = ideal2.rateideal.t_Page.Submit,
+                       ideal3r.timer = ideal3.rateideal.t_Page.Submit,
+                       ideal4r.timer = ideal4.rateideal.t_Page.Submit,
+                       ought1r.timer = ought1.rateought.t_Page.Submit,
+                       ought2r.timer = ought2.rateought.t_Page.Submit,
+                       ought3r.timer = ought3.rateought.t_Page.Submit,
+                       ought4r.timer = ought4.rateought.t_Page.Submit,
+                       ideal1a.timer = ideal1.rateactual.t_Page.Submit,
+                       ideal2a.timer = ideal2.rateactual.t_Page.Submit,
+                       ideal3a.timer = ideal3.rateactual.t_Page.Submit,
+                       ideal4a.timer = ideal4.rateactual.t_Page.Submit,
+                       ought1a.timer = ought1.rateactual.t_Page.Submit,
+                       ought2a.timer = ought2.rateactual.t_Page.Submit,
+                       ought3a.timer = ought3.rateactual.t_Page.Submit,
+                       ought4a.timer = ought4.rateactual.t_Page.Submit,
+                       rmfimp_investigate = rmfimp_investigate_1,
+                       rmfimp_investigate_t = rmfimp_investigate_t_Page.Submit,
+                       rmfimp_consider = rmfimp_consider_1,
+                       rmfimp_consider_t = rmfimp_consider_t_Page.Submit,
+                       rmfimp_inquire = rmfimp_inquire_1,
+                       rmfimp_inquire_t = rmfimp_inquire_t_Page.Submit,
+                       rmfimp_control = rmfimp_control_1,
+                       rmfimp_control_t = rmfimp_control_t_Page.Submit,
+                       rmfimp_manage = rmfimp_manage_1,
+                       rmfimp_manage_t = rmfimp_manage_t_Page.Submit,
+                       rmfimp_operate = rmfimp_operate_1,
+                       rmfimp_operate_t = rmfimp_operate_t_Page.Submit,
+                       rmfimp_scrutinize = rmfimp_scrutinize_1,
+                       rmfimp_scrutinize_t = rmfimp_scrutinize_t_Page.Submit,
+                       rmfimp_review = rmfimp_review_1,
+                       rmfimp_review_t = rmfimp_review_t_Page.Submit,
+                       rmfimp_judge = rmfimp_judge_1,
+                       rmfimp_judge_t = rmfimp_judge_t_Page.Submit,
+                       rmfimp_assess = rmfimp_assess_1,
+                       rmfimp_assess_t = rmfimp_assess_t_Page.Submit,
+                       rmfimp_examine = rmfimp_examine_1,
+                       rmfimp_examine_t = rmfimp_examine_t_Page.Submit,
+                       rmfimp_verify = rmfimp_verify_1,
+                       rmfimp_verify_t = rmfimp_verify_t_Page.Submit,
+                       rmfimp_guard = rmfimp_guard_1,
+                       rmfimp_guard_t = rmfimp_guard_t_Page.Submit,
+                       rmfimp_resist = rmfimp_resist_1,
+                       rmfimp_resist_t = rmfimp_resist_t_Page.Submit,
+                       rmfimp_defend = rmfimp_defend_1,
+                       rmfimp_defend_t = rmfimp_defend_t_Page.Submit,
+                       rmfimp_protect = rmfimp_protect_1,
+                       rmfimp_protect_t = rmfimp_protect_t_Page.Submit,
+                       rmfimp_preserve = rmfimp_preserve_1,
+                       rmfimp_preserve_t = rmfimp_preserve_t_Page.Submit,
+                       rmfimp_maintain = rmfimp_maintain_1,
+                       rmfimp_maintain_t = rmfimp_maintain_t_Page.Submit,
+                       rmfimp_explore = rmfimp_explore_1,
+                       rmfimp_explore_t = rmfimp_explore_t_Page.Submit,
+                       rmfimp_invent = rmfimp_invent_1,
+                       rmfimp_invent_t = rmfimp_invent_t_Page.Submit,
+                       rmfimp_seek = rmfimp_seek_1,
+                       rmfimp_seek_t = rmfimp_seek_t_Page.Submit,
+                       rmfimp_discover = rmfimp_discover_1,
+                       rmfimp_discover_t = rmfimp_discover_t_Page.Submit,
+                       rmfimp_imagine = rmfimp_imagine_1,
+                       rmfimp_imagine_t = rmfimp_imagine_t_Page.Submit,
+                       rmfimp_wonder = rmfimp_wonder_1,
+                       rmfimp_wonder_t = rmfimp_wonder_t_Page.Submit,
+                       rmfimp_propel = rmfimp_propel_1,
+                       rmfimp_propel_t = rmfimp_propel_t_Page.Submit,
+                       rmfimp_accelerate = rmfimp_accelerate_1,
+                       rmfimp_accelerate_t = rmfimp_accelerate_t_Page.Submit,
+                       rmfimp_progress = rmfimp_progress_1,
+                       rmfimp_progress_t = rmfimp_progress_t_Page.Submit,
+                       rmfimp_elevate = rmfimp_elevate_1,
+                       rmfimp_elevate_t = rmfimp_elevate_t_Page.Submit,
+                       rmfimp_lead = rmfimp_lead_1,
+                       rmfimp_lead_t = rmfimp_lead_t_Page.Submit,
+                       rmfimp_launch = rmfimp_launch_1,
+                       rmfimp_launch_t = rmfimp_launch_t_Page.Submit,
+                       rmfimp_exercise = rmfimp_exercise_1,
+                       rmfimp_exercise_t = rmfimp_exercise_t_Page.Submit,
+                       rmfimp_communicate = rmfimp_communicate_1,
+                       rmfimp_communicate_t = rmfimp_communicate_t_Page.Submit,
+                       rmfimp_sleep = rmfimp_sleep_1,
+                       rmfimp_sleep_t = rmfimp_sleep_t_Page.Submit,
+                       rmfimp_shower = rmfimp_shower_1,
+                       rmfimp_shower_t = rmfimp_shower_t_Page.Submit,
+                       rmfimp_pray = rmfimp_pray_1,
+                       rmfimp_pray_t = rmfimp_pray_t_Page.Submit,
+                       rmfimp_read = rmfimp_read_1,
+                       rmfimp_read_t = rmfimp_read_t_Page.Submit)
+
+# Delete unnecessary Qualtrics columns
+mfraw$StartDate <- NULL
+mfraw$EndDate <- NULL
+mfraw$RecipientLastName <- NULL
+mfraw$RecipientFirstName <- NULL
+mfraw$RecipientEmail <- NULL
+
+# Convert character columns to character
+mfraw.char <- c("Status", "IPAddress", "Finished", "RecordedDate", "ResponseId", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage", "animal", "food", "color", "ideal1", "ideal2", "ideal3", "ideal4", "ought1", "ought2", "ought3", "ought4", "rmfrecall_1", "rmfrecall_2", "rmfrecall_3", "rmfrecall_4", "rmfrecall_5", "rmfrecall_6", "rmfrecall_7", "rmfrecall_8", "rmfrecall_9", "rmfrecall_10", "rmfrecall_11", "rmfrecall_12", "rmfrecall_13", "rmfrecall_14", "rmfrecall_15", "rmfrecall_16", "rmfrecall_17", "rmfrecall_18", "rmfrecall_19", "rmfrecall_20", "rmfrecall_21", "rmfrecall_22", "rmfrecall_23", "rmfrecall_24", "rmfrecall_25", "rmfrecall_26", "rmfrecall_27", "rmfrecall_28", "rmfrecall_29", "rmfrecall_30", "rmfrecall_31", "rmfrecall_32", "rmfrecall_33", "rmfrecall_34", "rmfrecall_35", "rmfrecall_36", "gender", "language", "ethnicity", "education", "income", "location")
+mfraw[mfraw.char] <- lapply(mfraw[mfraw.char], as.character)
+rm(mfraw.char)
+
+# Convert columns to numeric
+mfraw.num <- c("id", "Progress", "duration", "ideal1.timer", "ideal2.timer", "ideal3.timer", "ideal4.timer", "ought1.timer", "ought2.timer", "ought3.timer", "ought4.timer", "ideal1r.timer", "ideal2r.timer", "ideal3r.timer", "ideal4r.timer", "ought1r.timer", "ought2r.timer", "ought3r.timer", "ought4r.timer", "ideal1a.timer", "ideal2a.timer", "ideal3a.timer", "ideal4a.timer", "ought1a.timer", "ought2a.timer", "ought3a.timer", "ought4a.timer","rmq_1", "rmq_2", "rmq_3", "rmq_4", "rmq_5", "rmq_6", "rmq_7", "rmq_8", "rmq_9", "rmq_10", "rmq_11", "rmq_12", "rmq_13", "rmq_14", "rmq_15", "rmq_16", "rmq_17", "rmq_18", "rmq_19", "rmq_20", "rmq_21", "rmq_22", "rmq_23", "rmq_24", "rmq_25", "rmq_26", "rmq_27", "rmq_28", "rmq_29", "rmq_30", "rfq_1", "rfq_2", "rfq_3", "rfq_4", "rfq_5", "rfq_6", "rfq_7", "rfq_8", "rfq_9", "rfq_10", "rfq_11", "age", "rmfimp_investigate", "rmfimp_investigate_t", "rmfimp_consider", "rmfimp_consider_t", "rmfimp_inquire", "rmfimp_inquire_t", "rmfimp_control", "rmfimp_control_t", "rmfimp_manage", "rmfimp_manage_t", "rmfimp_operate", "rmfimp_operate_t", "rmfimp_scrutinize", "rmfimp_scrutinize_t", "rmfimp_review", "rmfimp_review_t", "rmfimp_judge", "rmfimp_judge_t", "rmfimp_assess", "rmfimp_assess_t", "rmfimp_examine", "rmfimp_examine_t", "rmfimp_verify", "rmfimp_verify_t", "rmfimp_guard", "rmfimp_guard_t", "rmfimp_resist", "rmfimp_resist_t", "rmfimp_defend", "rmfimp_defend_t", "rmfimp_protect", "rmfimp_protect_t", "rmfimp_preserve", "rmfimp_preserve_t", "rmfimp_maintain", "rmfimp_maintain_t", "rmfimp_explore", "rmfimp_explore_t", "rmfimp_invent", "rmfimp_invent_t", "rmfimp_seek", "rmfimp_seek_t", "rmfimp_discover", "rmfimp_discover_t", "rmfimp_imagine", "rmfimp_imagine_t", "rmfimp_wonder", "rmfimp_wonder_t", "rmfimp_propel", "rmfimp_propel_t", "rmfimp_accelerate", "rmfimp_accelerate_t", "rmfimp_progress", "rmfimp_progress_t", "rmfimp_elevate", "rmfimp_elevate_t", "rmfimp_lead", "rmfimp_lead_t", "rmfimp_launch", "rmfimp_launch_t", "rmfimp_exercise", "rmfimp_exercise_t", "rmfimp_communicate", "rmfimp_communicate_t", "rmfimp_sleep", "rmfimp_sleep_t", "rmfimp_shower", "rmfimp_shower_t", "rmfimp_pray", "rmfimp_pray_t", "rmfimp_read", "rmfimp_read_t", "rpm_1", "rpm_2", "rpm_3", "rpm_4", "rpm_5", "rpm_6", "rpm_7", "rpm_8", "rpm_9", "rpm_10", "mem_scrutinize", "mem_review", "mem_judge", "mem_assess", "mem_examine", "mem_verify", "mem_explore", "mem_invent", "mem_seek", "mem_discover", "mem_imagine", "mem_wonder", "mem_guard", "mem_resist", "mem_defend", "mem_protect", "mem_preserve", "mem_maintain", "mem_propel", "mem_accelerate", "mem_progress", "mem_elevate", "mem_lead", "mem_launch", "mem_control", "mem_manage", "mem_operate", "mem_inquire", "mem_investigate", "mem_consider", "mem_exercise", "mem_communicate", "mem_sleep", "mem_read", "mem_shower", "mem_pray") # Define numeric columns
+mfraw[mfraw.num] <- lapply(mfraw[mfraw.num], as.character) # Convert numeric columns to character (before numeric) to prevent values from changing
+mfraw[mfraw.num] <- lapply(mfraw[mfraw.num], as.numeric) # Convert numeric columns to numeric
+rm(mfraw.num) # Clear mfraw.num from workspace as it is no longer needed
+
+## DEMOGRAPHIC MEASURES
+
+# Renaming and ordering factor levels where appropriate
+mfraw$gender[is.na(mfraw$gender)] <- "No Response"
+mfraw$gender[mfraw$gender == ""] <- "No Response"
+mfraw$gender[mfraw$gender == "1"] <- "Male"
+mfraw$gender[mfraw$gender == "2"] <- "Female"
+mfraw$gender[mfraw$gender == "3"] <- "Other"
+mfraw$gender <- as.factor(mfraw$gender)
+
+mfraw$language[is.na(mfraw$language)] <- "No Response"
+mfraw$language[mfraw$language == ""] <- "No Response"
+mfraw$language[mfraw$language == "1"] <- "English"
+mfraw$language[mfraw$language == "4"] <- "Spanish"
+mfraw$language[mfraw$language == "3"] <- "Other"
+mfraw$language <- as.factor(mfraw$language)
+
+mfraw$ethnicity[is.na(mfraw$ethnicity)] <- "No Response"
+mfraw$ethnicity[mfraw$ethnicity == ""] <- "No Response"
+mfraw$ethnicity[!(mfraw$ethnicity == "1" | mfraw$ethnicity == "2" | mfraw$ethnicity == "3" |
+                  mfraw$ethnicity == "4" | mfraw$ethnicity == "5" | mfraw$ethnicity == "6" |
+                  mfraw$ethnicity == "7")] <- "Multiracial"
+mfraw$ethnicity[mfraw$ethnicity == "1"] <- "Native American"
+mfraw$ethnicity[mfraw$ethnicity == "2"] <- "Asian"
+mfraw$ethnicity[mfraw$ethnicity == "3"] <- "Black"
+mfraw$ethnicity[mfraw$ethnicity == "4"] <- "Hispanic"
+mfraw$ethnicity[mfraw$ethnicity == "5"] <- "Pacific Islander"
+mfraw$ethnicity[mfraw$ethnicity == "6"] <- "White"
+mfraw$ethnicity[mfraw$ethnicity == "7"] <- "Other"
+mfraw$ethnicity <- as.factor(mfraw$ethnicity)
+
+mfraw$education[is.na(mfraw$education)] <- "No Response"
+mfraw$education[mfraw$education == ""] <- "No Response"
+mfraw$education[mfraw$education == "1"] <- "None"
+mfraw$education[mfraw$education == "2"] <- "Elementary"
+mfraw$education[mfraw$education == "3"] <- "Some High School"
+mfraw$education[mfraw$education == "4"] <- "High School"
+mfraw$education[mfraw$education == "5"] <- "Some College"
+mfraw$education[mfraw$education == "6"] <- "Associate's"
+mfraw$education[mfraw$education == "7"] <- "Bachelor's"
+mfraw$education[mfraw$education == "8"] <- "Master's"
+mfraw$education[mfraw$education == "9"] <- "Doctorate"
+mfraw$education <- as.factor(mfraw$education)
+mfraw$education <- factor(mfraw$education, ordered = TRUE, levels = c("None", "Elementary", "Some High School", "High School", "Some College", "Associate's", "Bachelor's", "Master's", "Doctorate", "No Response"))
+
+mfraw$income[is.na(mfraw$income)] <- "No Response"
+mfraw$income[mfraw$income == ""] <- "No Response"
+mfraw$income[mfraw$income == "1"] <- "$0-$10K"
+mfraw$income[mfraw$income == "2"] <- "$10K-$20K"
+mfraw$income[mfraw$income == "3"] <- "$20K-$40K"
+mfraw$income[mfraw$income == "4"] <- "$40K-$70K"
+mfraw$income[mfraw$income == "5"] <- "$70K-$100K"
+mfraw$income[mfraw$income == "6"] <- "$100K-$250K"
+mfraw$income[mfraw$income == "7"] <- "$250K-$500K"
+mfraw$income[mfraw$income == "8"] <- "$500K+"
+mfraw$income[mfraw$income == "9"] <- "No Response"
+mfraw$income <- as.factor(mfraw$income)
+mfraw$income <- factor(mfraw$income, ordered = TRUE, levels = c("$0-$10K", "$10K-$20K", "$20K-$40K", "$40K-$70K", "$70K-$100K", "$100K-$250K", "$250K-$500K", "$500K+", "No Response"))
+
+mfraw$location[mfraw$location == "No Response"] <- NA
+mfraw$location[mfraw$location == "2"] <- "NotInUS"
+mfraw$location[mfraw$location == "3"] <- "AL"
+mfraw$location[mfraw$location == "4"] <- "AK"
+mfraw$location[mfraw$location == "5"] <- "AS"
+mfraw$location[mfraw$location == "6"] <- "AZ"
+mfraw$location[mfraw$location == "7"] <- "AR"
+mfraw$location[mfraw$location == "8"] <- "CA"
+mfraw$location[mfraw$location == "58"] <- "CO"
+mfraw$location[mfraw$location == "9"] <- "CT"
+mfraw$location[mfraw$location == "10"] <- "DE"
+mfraw$location[mfraw$location == "59"] <- "DC"
+mfraw$location[mfraw$location == "12"] <- "FL"
+mfraw$location[mfraw$location == "13"] <- "GA"
+mfraw$location[mfraw$location == "14"] <- "GU"
+mfraw$location[mfraw$location == "15"] <- "HI"
+mfraw$location[mfraw$location == "16"] <- "ID"
+mfraw$location[mfraw$location == "65"] <- "IL"
+mfraw$location[mfraw$location == "66"] <- "IN"
+mfraw$location[mfraw$location == "67"] <- "IA"
+mfraw$location[mfraw$location == "68"] <- "KS"
+mfraw$location[mfraw$location == "69"] <- "KY"
+mfraw$location[mfraw$location == "70"] <- "LA"
+mfraw$location[mfraw$location == "71"] <- "ME"
+mfraw$location[mfraw$location == "72"] <- "MD"
+mfraw$location[mfraw$location == "73"] <- "MA"
+mfraw$location[mfraw$location == "74"] <- "MI"
+mfraw$location[mfraw$location == "75"] <- "MN"
+mfraw$location[mfraw$location == "76"] <- "MS"
+mfraw$location[mfraw$location == "105"] <- "MO"
+mfraw$location[mfraw$location == "77"] <- "MT"
+mfraw$location[mfraw$location == "78"] <- "NE"
+mfraw$location[mfraw$location == "79"] <- "NV"
+mfraw$location[mfraw$location == "80"] <- "NH"
+mfraw$location[mfraw$location == "81"] <- "NJ"
+mfraw$location[mfraw$location == "82"] <- "NM"
+mfraw$location[mfraw$location == "83"] <- "NY"
+mfraw$location[mfraw$location == "84"] <- "NC"
+mfraw$location[mfraw$location == "85"] <- "ND"
+mfraw$location[mfraw$location == "86"] <- "MP"
+mfraw$location[mfraw$location == "87"] <- "OH"
+mfraw$location[mfraw$location == "88"] <- "OK"
+mfraw$location[mfraw$location == "89"] <- "OR"
+mfraw$location[mfraw$location == "90"] <- "PA"
+mfraw$location[mfraw$location == "91"] <- "PR"
+mfraw$location[mfraw$location == "92"] <- "RI"
+mfraw$location[mfraw$location == "93"] <- "SC"
+mfraw$location[mfraw$location == "94"] <- "SD"
+mfraw$location[mfraw$location == "95"] <- "TN"
+mfraw$location[mfraw$location == "96"] <- "TX"
+mfraw$location[mfraw$location == "97"] <- "VI"
+mfraw$location[mfraw$location == "98"] <- "UT"
+mfraw$location[mfraw$location == "99"] <- "VT"
+mfraw$location[mfraw$location == "100"] <- "VA"
+mfraw$location[mfraw$location == "101"] <- "WA"
+mfraw$location[mfraw$location == "102"] <- "WV"
+mfraw$location[mfraw$location == "103"] <- "WI"
+mfraw$location[mfraw$location == "104"] <- "WY"
+mfraw$location <- as.factor(mfraw$location)
+
+## EXCLUDE PARTICIPANTS FLAGGED WITH FRAUDULENT IP ADDRESSSES
+
+# Check for fraudulent M-Turk responses flagged by rIP package
+mfrawexcl <- mfraw
+#blockornot <- getIPinfo(mfrawexcl, "IPAddress", "[key]")
+# Anyone looking to rerun the line of code above will need to secure a free X-key
+# from iphub.info and place it within the quotes
+
+#save(blockornot, file = "data/blockornot_mem2a.RData")
+load("data/blockornot_mem2a.RData")
+mfrawexcl <- merge(mfrawexcl, blockornot, by = "IPAddress") # Merging blockornot results
+rm(blockornot)
+
+# Determine and exclude flagged IP addresses
+blocked <- nrow(subset(mfrawexcl, IP_Hub_recommend_block == 1)) # 4 blocked
+mfrawexcl <- mfrawexcl[mfrawexcl$IP_Hub_recommend_block == 0,] # Blocking flagged as "1"; n = 71
+mfraw <- mfrawexcl
+rm(mfrawexcl)
+
+## EXCLUDE NON-NATIVE ENGLISH SPEAKERS
+
+# Redefining dataset to reflect exclusions (to be edited if excluded group is >10%)
+nonenglish <- nrow(subset(mfraw, language != "English")) # 1 non-native English speaker
+nonenglishpct <- nrow(subset(mfraw, language != "English"))/nrow(mfraw) # 1.4%
+mfraw <- subset(mfraw, language == "English") # Not > 10%, so excluding this participant; n = 70
+
+## RESPONSE-LATENCY-BASED MOTIVATION MEASURES: REGULATORY FOCUS STRENGTH
+
+# Checking on people who repeated attributes
+rfattributes <- dplyr::select(mfraw, id, ideal1, ideal2, ideal3, ought1, ought2, ought3)
+rfattributes$ideal1 <- str_to_lower(rfattributes$ideal1)
+rfattributes$ideal2 <- str_to_lower(rfattributes$ideal2)
+rfattributes$ideal3 <- str_to_lower(rfattributes$ideal3)
+rfattributes$ought1 <- str_to_lower(rfattributes$ought1)
+rfattributes$ought2 <- str_to_lower(rfattributes$ought2)
+rfattributes$ought3 <- str_to_lower(rfattributes$ought3)
+rfattributes$excl_rfs[rfattributes$id == 62 | rfattributes$id == 63] <- 1 # Flag IDs to be excluded from RFS analyses because measure was not completed properly
+rfattributes <- dplyr::select(rfattributes, id, excl_rfs)
+improper_rfs <- sum(!is.na(rfattributes$excl_rfs)) # 2 participants missing RFS
+mfraw <- merge(mfraw, rfattributes, by = "id")
+rm(rfattributes)
+
+# Subset data for participants for whom we can calculate RF-Strength scores
+mfraw_rfs <- dplyr::filter(mfraw, is.na(excl_rfs)) # n = 68
+
+# Log-adjust promotion / prevention timer scores to normalize the distributions
+mfraw_rfs$ought1.timer.log <- log(mfraw_rfs$ought1.timer)
+mfraw_rfs$ought1r.timer.log <- log(mfraw_rfs$ought1r.timer)
+mfraw_rfs$ought1a.timer.log <- log(mfraw_rfs$ought1a.timer)
+mfraw_rfs$ought2.timer.log <- log(mfraw_rfs$ought2.timer)
+mfraw_rfs$ought2r.timer.log <- log(mfraw_rfs$ought2r.timer)
+mfraw_rfs$ought2a.timer.log <- log(mfraw_rfs$ought2a.timer)
+mfraw_rfs$ought3.timer.log <- log(mfraw_rfs$ought3.timer)
+mfraw_rfs$ought3r.timer.log <- log(mfraw_rfs$ought3r.timer)
+mfraw_rfs$ought3a.timer.log <- log(mfraw_rfs$ought3a.timer)
+mfraw_rfs$ideal1.timer.log <- log(mfraw_rfs$ideal1.timer)
+mfraw_rfs$ideal1r.timer.log <- log(mfraw_rfs$ideal1r.timer)
+mfraw_rfs$ideal1a.timer.log <- log(mfraw_rfs$ideal1a.timer)
+mfraw_rfs$ideal2.timer.log <- log(mfraw_rfs$ideal2.timer)
+mfraw_rfs$ideal2r.timer.log <- log(mfraw_rfs$ideal2r.timer)
+mfraw_rfs$ideal2a.timer.log <- log(mfraw_rfs$ideal2a.timer)
+mfraw_rfs$ideal3.timer.log <- log(mfraw_rfs$ideal3.timer)
+mfraw_rfs$ideal3r.timer.log <- log(mfraw_rfs$ideal3r.timer)
+mfraw_rfs$ideal3a.timer.log <- log(mfraw_rfs$ideal3a.timer)
+
+# Calculate prevention and promotion strength
+mfraw_rfs$prev1.str <- mfraw_rfs$ought1.timer.log + mfraw_rfs$ought1r.timer.log + mfraw_rfs$ought1a.timer.log
+mfraw_rfs$prev2.str <- mfraw_rfs$ought2.timer.log + mfraw_rfs$ought2r.timer.log + mfraw_rfs$ought2a.timer.log
+mfraw_rfs$prev3.str <- mfraw_rfs$ought3.timer.log + mfraw_rfs$ought3r.timer.log + mfraw_rfs$ought3a.timer.log
+mfraw_rfs$prom1.str <- mfraw_rfs$ideal1.timer.log + mfraw_rfs$ideal1r.timer.log + mfraw_rfs$ideal1a.timer.log
+mfraw_rfs$prom2.str <- mfraw_rfs$ideal2.timer.log + mfraw_rfs$ideal2r.timer.log + mfraw_rfs$ideal2a.timer.log
+mfraw_rfs$prom3.str <- mfraw_rfs$ideal3.timer.log + mfraw_rfs$ideal3r.timer.log + mfraw_rfs$ideal3a.timer.log
+
+# In determining RF strength, reverse the signs so higher = stronger
+mfraw_rfs$prev.str <- -1 * (mfraw_rfs$prev1.str + mfraw_rfs$prev2.str + mfraw_rfs$prev3.str)/3
+mfraw_rfs$prom.str <- -1 * (mfraw_rfs$prom1.str + mfraw_rfs$prom2.str + mfraw_rfs$prom3.str)/3
+
+# Replacing -Inf with NA
+mfraw_rfs$prev.str[!is.finite(mfraw_rfs$prev.str)] <- NA
+mfraw_rfs$prom.str[!is.finite(mfraw_rfs$prom.str)] <- NA
+
+# Calculate mean-centered and scaled prevention strength and promotion strength scores
+mfraw_rfs$prev.strc <- mfraw_rfs$prev.str
+mfraw_rfs$prev.strc <- as.numeric(scale(mfraw_rfs$prev.strc, center = TRUE, scale = FALSE))
+mfraw_rfs$prev.strcs <- as.numeric(scale(mfraw_rfs$prev.strc, center = TRUE, scale = TRUE))
+mfraw_rfs$prom.strc <- mfraw_rfs$prom.str
+mfraw_rfs$prom.strc <- as.numeric(scale(mfraw_rfs$prom.strc, center = TRUE, scale = FALSE))
+mfraw_rfs$prom.strcs <- as.numeric(scale(mfraw_rfs$prom.strc, center = TRUE, scale = TRUE))
+
+# Calculate promotion strength dominance scores and mean-center them
+mfraw_rfs$promdom.str <- mfraw_rfs$prom.str - mfraw_rfs$prev.str
+mfraw_rfs$promdom.strc <- mfraw_rfs$promdom.str
+mfraw_rfs$promdom.strc <- as.numeric(scale(mfraw_rfs$promdom.strc, center = TRUE, scale = FALSE))
+
+# Select newly calculated columns in RFS version of dataframe, identify who is missing any of these regulatory focus strength scores, and merge back into mfraw
+mfraw_rfs <- dplyr::select(mfraw_rfs, id, ideal1.timer.log, ideal1r.timer.log, ideal1a.timer.log, ideal2.timer.log, ideal2r.timer.log, ideal2a.timer.log, ideal3.timer.log, ideal3r.timer.log, ideal3a.timer.log, ought1.timer.log, ought1r.timer.log, ought1a.timer.log, ought2.timer.log, ought2r.timer.log, ought2a.timer.log, ought3.timer.log, ought3r.timer.log, ought3a.timer.log, prev.str, prom.str, prev.strc, prev.strcs, prom.strc, prom.strcs, promdom.str, promdom.strc)
+mfraw_rfs$missing_rfs <- ifelse(!complete.cases(mfraw_rfs),1,0)
+missing_rfs <- sum(!complete.cases(mfraw_rfs)) # 2 participants missing RFS
+mfraw <- merge(mfraw, mfraw_rfs, by = "id", all.x = T, all.y = F)
+rm(mfraw_rfs)
+
+## EXCLUDE PARTICIPANTS MISSING PROMOTION OR PREVENTION STRENGTH SCORES (as these are key predictor variables)
+
+# Redefining dataset to reflect exclusions
+mfraw <- subset(mfraw, missing_rfs != 1) # n = 66
+
+## QUESTIONNAIRE-BASED MOTIVATION MEASURES: REGULATORY FOCUS PRIDE AND REGULATORY MODE
+
+# Calculate prevention, promotion, assessment, and locomotion scores
+mfraw$prev.eff <- ((6-mfraw$rfq_2) + (6-mfraw$rfq_4) + mfraw$rfq_5 + (6-mfraw$rfq_6) + (6-mfraw$rfq_8))/5
+mfraw$prom.eff <- ((6-mfraw$rfq_1) + mfraw$rfq_3 + mfraw$rfq_7 + (6-mfraw$rfq_9) + mfraw$rfq_10 + (6-mfraw$rfq_11))/6
+mfraw$ass <- ((7-mfraw$rmq_2) + mfraw$rmq_6 + mfraw$rmq_7 + mfraw$rmq_9 + (7-mfraw$rmq_10) + mfraw$rmq_11 + mfraw$rmq_15 + mfraw$rmq_19 + mfraw$rmq_20 + mfraw$rmq_22 + (7-mfraw$rmq_27) + mfraw$rmq_30)/12
+mfraw$loc <- (mfraw$rmq_1 + mfraw$rmq_3 + mfraw$rmq_4 + mfraw$rmq_5 + mfraw$rmq_8 + mfraw$rmq_16 + mfraw$rmq_21 + mfraw$rmq_25 + mfraw$rmq_28 + mfraw$rmq_29 + (7-mfraw$rmq_13) + (7-mfraw$rmq_24))/12
+
+# Calculate mean-centered and scaled prevention pride, promotion pride, assessment, and locomotion scores
+mfraw$prev.effc <- mfraw$prev.eff
+mfraw$prev.effc <- as.numeric(scale(mfraw$prev.effc, center = TRUE, scale = FALSE))
+mfraw$prev.effcs <- as.numeric(scale(mfraw$prev.effc, center = TRUE, scale = TRUE))
+mfraw$prom.effc <- mfraw$prom.eff
+mfraw$prom.effc <- as.numeric(scale(mfraw$prom.effc, center = TRUE, scale = FALSE))
+mfraw$prom.effcs <- as.numeric(scale(mfraw$prom.effc, center = TRUE, scale = TRUE))
+mfraw$amc <- mfraw$ass
+mfraw$amc <- as.numeric(scale(mfraw$amc, center = TRUE, scale = FALSE))
+mfraw$amcs <- as.numeric(scale(mfraw$amc, center = TRUE, scale = TRUE))
+mfraw$lmc <- mfraw$loc
+mfraw$lmc <- as.numeric(scale(mfraw$lmc, center = TRUE, scale = FALSE))
+mfraw$lmcs <- as.numeric(scale(mfraw$lmc, center = TRUE, scale = TRUE))
+
+# Calculate promotion pride and locomotion dominance scores and mean-center them
+mfraw$promdom.eff <- mfraw$prom.eff - mfraw$prev.eff
+mfraw$promdom.effc <- mfraw$promdom.eff
+mfraw$promdom.effc <- as.numeric(scale(mfraw$promdom.effc, center = TRUE, scale = FALSE))
+mfraw$locdom <- mfraw$loc - mfraw$ass
+mfraw$locdomc <- mfraw$locdom
+mfraw$locdomc <- as.numeric(scale(mfraw$locdomc, center = TRUE, scale = FALSE))
+
+## MEMORY MEASURES (PREP)
+
+# Dummy-code memory data (1 = remembered at all)
+mfraw$mem_scrutinize.d <- ifelse(is.na(mfraw$mem_scrutinize), 0, 1)
+mfraw$mem_review.d <- ifelse(is.na(mfraw$mem_review), 0, 1)
+mfraw$mem_judge.d <- ifelse(is.na(mfraw$mem_judge), 0, 1)
+mfraw$mem_assess.d <- ifelse(is.na(mfraw$mem_assess), 0, 1)
+mfraw$mem_examine.d <- ifelse(is.na(mfraw$mem_examine), 0, 1)
+mfraw$mem_verify.d <- ifelse(is.na(mfraw$mem_verify), 0, 1)
+mfraw$mem_explore.d <- ifelse(is.na(mfraw$mem_explore), 0, 1)
+mfraw$mem_invent.d <- ifelse(is.na(mfraw$mem_invent), 0, 1)
+mfraw$mem_seek.d <- ifelse(is.na(mfraw$mem_seek), 0, 1)
+mfraw$mem_discover.d <- ifelse(is.na(mfraw$mem_discover), 0, 1)
+mfraw$mem_imagine.d <- ifelse(is.na(mfraw$mem_imagine), 0, 1)
+mfraw$mem_wonder.d <- ifelse(is.na(mfraw$mem_wonder), 0, 1)
+mfraw$mem_guard.d <- ifelse(is.na(mfraw$mem_guard), 0, 1)
+mfraw$mem_resist.d <- ifelse(is.na(mfraw$mem_resist), 0, 1)
+mfraw$mem_defend.d <- ifelse(is.na(mfraw$mem_defend), 0, 1)
+mfraw$mem_protect.d <- ifelse(is.na(mfraw$mem_protect), 0, 1)
+mfraw$mem_preserve.d <- ifelse(is.na(mfraw$mem_preserve), 0, 1)
+mfraw$mem_maintain.d <- ifelse(is.na(mfraw$mem_maintain), 0, 1)
+mfraw$mem_propel.d <- ifelse(is.na(mfraw$mem_propel), 0, 1)
+mfraw$mem_accelerate.d <- ifelse(is.na(mfraw$mem_accelerate), 0, 1)
+mfraw$mem_progress.d <- ifelse(is.na(mfraw$mem_progress), 0, 1)
+mfraw$mem_elevate.d <- ifelse(is.na(mfraw$mem_elevate), 0, 1)
+mfraw$mem_lead.d <- ifelse(is.na(mfraw$mem_lead), 0, 1)
+mfraw$mem_launch.d <- ifelse(is.na(mfraw$mem_launch), 0, 1)
+mfraw$mem_control.d <- ifelse(is.na(mfraw$mem_control), 0, 1)
+mfraw$mem_manage.d <- ifelse(is.na(mfraw$mem_manage), 0, 1)
+mfraw$mem_operate.d <- ifelse(is.na(mfraw$mem_operate), 0, 1)
+mfraw$mem_inquire.d <- ifelse(is.na(mfraw$mem_inquire), 0, 1)
+mfraw$mem_investigate.d <- ifelse(is.na(mfraw$mem_investigate), 0, 1)
+mfraw$mem_consider.d <- ifelse(is.na(mfraw$mem_consider), 0, 1)
+mfraw$mem_exercise.d <- ifelse(is.na(mfraw$mem_exercise), 0, 1)
+mfraw$mem_communicate.d <- ifelse(is.na(mfraw$mem_communicate), 0, 1)
+mfraw$mem_sleep.d <- ifelse(is.na(mfraw$mem_sleep), 0, 1)
+mfraw$mem_read.d <- ifelse(is.na(mfraw$mem_read), 0, 1)
+mfraw$mem_shower.d <- ifelse(is.na(mfraw$mem_shower), 0, 1)
+mfraw$mem_pray.d <- ifelse(is.na(mfraw$mem_pray), 0, 1)
+
+# Gather memory rank data (from wide to long)
+mfmem <- dplyr::select(mfraw, "id", "mem_scrutinize", "mem_review", "mem_judge", "mem_assess", "mem_examine", "mem_verify", "mem_explore", "mem_invent", "mem_seek", "mem_discover", "mem_imagine", "mem_wonder", "mem_guard", "mem_resist", "mem_defend", "mem_protect", "mem_preserve", "mem_maintain", "mem_propel", "mem_accelerate", "mem_progress", "mem_elevate", "mem_lead", "mem_launch", "mem_control", "mem_manage", "mem_operate", "mem_inquire", "mem_investigate", "mem_consider", "mem_exercise", "mem_communicate", "mem_sleep", "mem_read", "mem_shower", "mem_pray")
+mfmem <- gather(mfmem, key = stim, value = memrank, "mem_scrutinize", "mem_review", "mem_judge", "mem_assess", "mem_examine", "mem_verify", "mem_explore", "mem_invent", "mem_seek", "mem_discover", "mem_imagine", "mem_wonder", "mem_guard", "mem_resist", "mem_defend", "mem_protect", "mem_preserve", "mem_maintain", "mem_propel", "mem_accelerate", "mem_progress", "mem_elevate", "mem_lead", "mem_launch", "mem_control", "mem_manage", "mem_operate", "mem_inquire", "mem_investigate", "mem_consider", "mem_exercise", "mem_communicate", "mem_sleep", "mem_read", "mem_shower", "mem_pray")
+mfmem$stim <- str_replace_all(mfmem$stim, fixed("mem_"), "")
+mfmem$logmemrank <- log(mfmem$memrank) # Log-transform memrank so more normal
+mfmem$memrank <- mfmem$memrank * -1 # reverse-score so higher = stronger
+mfmem$logmemrank <- mfmem$logmemrank * -1 # reverse-score so higher = stronger
+
+# Gather memory data (from wide to long)
+mfmem.d <- dplyr::select(mfraw, "id", "mem_scrutinize.d", "mem_review.d", "mem_judge.d", "mem_assess.d", "mem_examine.d", "mem_verify.d", "mem_explore.d", "mem_invent.d", "mem_seek.d", "mem_discover.d", "mem_imagine.d", "mem_wonder.d", "mem_guard.d", "mem_resist.d", "mem_defend.d", "mem_protect.d", "mem_preserve.d", "mem_maintain.d", "mem_propel.d", "mem_accelerate.d", "mem_progress.d", "mem_elevate.d", "mem_lead.d", "mem_launch.d", "mem_control.d", "mem_manage.d", "mem_operate.d", "mem_inquire.d", "mem_investigate.d", "mem_consider.d", "mem_exercise.d", "mem_communicate.d", "mem_sleep.d", "mem_read.d", "mem_shower.d", "mem_pray.d")
+mfmem.d <- gather(mfmem.d, key = stim, value = mem.d, "mem_scrutinize.d", "mem_review.d", "mem_judge.d", "mem_assess.d", "mem_examine.d", "mem_verify.d", "mem_explore.d", "mem_invent.d", "mem_seek.d", "mem_discover.d", "mem_imagine.d", "mem_wonder.d", "mem_guard.d", "mem_resist.d", "mem_defend.d", "mem_protect.d", "mem_preserve.d", "mem_maintain.d", "mem_propel.d", "mem_accelerate.d", "mem_progress.d", "mem_elevate.d", "mem_lead.d", "mem_launch.d", "mem_control.d", "mem_manage.d", "mem_operate.d", "mem_inquire.d", "mem_investigate.d", "mem_consider.d", "mem_exercise.d", "mem_communicate.d", "mem_sleep.d", "mem_read.d", "mem_shower.d", "mem_pray.d")
+mfmem.d$stim <- str_replace_all(mfmem.d$stim, fixed("mem_"), "")
+mfmem.d$stim <- str_replace_all(mfmem.d$stim, fixed(".d"), "")
+
+# Merge into a single mf dataframe
+mf <- merge(mfmem, mfraw, all.x = T)
+mf <- merge(mf, mfmem.d, all.x = T)
+
+# Remove dataframes not needed further
+rm(mfmem)
+rm(mfmem.d)
+
+# Reorder stimtype levels in stimlist
+stimlist$stimtype.ord <- factor(stimlist$stimtype, ordered = TRUE, levels = c("tgen", "prevtruth", "promtruth", "cgen", "prevcontrol", "promcontrol", "gen"))
+stimlist$stimrf.ord <- factor(stimlist$stimrf, ordered = TRUE, levels = c("prev", "prom", "gen"))
+stimlist$stimtc.ord <- factor(stimlist$stimtc, ordered = TRUE, levels = c("truth", "control", "gen"))
+
+# Merge mf with stimlist
+mf <- merge(mf, stimlist, all.x = T, by = "stim")
+
+# Within-person memtotal
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal = sum(mem.d)) %>%
+  ungroup()
+
+# Within-person process-specific memtotal
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_process = sum(mem.d[stimtype != "gen"])) %>%
+  ungroup()
+
+# Within-person motive-specific memtotal
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_mot = sum(mem.d[stimtype == "prevtruth" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "promcontrol"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_prevtruth = sum(mem.d[stimtype == "prevtruth"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_promtruth = sum(mem.d[stimtype == "promtruth"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_prevctrl = sum(mem.d[stimtype == "prevcontrol"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_promctrl = sum(mem.d[stimtype == "promcontrol"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_truth = sum(mem.d[stimtype == "prevtruth" | stimtype == "promtruth"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_ctrl = sum(mem.d[stimtype == "prevcontrol" | stimtype == "promcontrol"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_prom = sum(mem.d[stimtype == "promcontrol" | stimtype == "promtruth"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_prev = sum(mem.d[stimtype == "prevcontrol" | stimtype == "prevtruth"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_tgen = sum(mem.d[stimtype == "tgen"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_cgen = sum(mem.d[stimtype == "cgen"])) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memtotal_gen = sum(mem.d[stimtype == "gen"])) %>%
+  ungroup()
+
+memtotals <- unique(dplyr::select(mf, id, memtotal, memtotal_process, memtotal_mot, memtotal_prevtruth, memtotal_promtruth, memtotal_promctrl, memtotal_prevctrl, memtotal_truth, memtotal_ctrl, memtotal_prom, memtotal_prev, memtotal_tgen, memtotal_cgen, memtotal_gen))
+
+mfraw <- merge(mfraw, memtotals)
+rm(memtotals)
+
+# Within-person relative motive importance (higher = stronger) based on proportion of total motive words remembered
+mf$prevtruth.memtotalprop.within <- mf$memtotal_prevtruth / mf$memtotal_mot
+mf$promtruth.memtotalprop.within <- mf$memtotal_promtruth / mf$memtotal_mot
+mf$prevctrl.memtotalprop.within <- mf$memtotal_prevctrl / mf$memtotal_mot
+mf$promctrl.memtotalprop.within <- mf$memtotal_promctrl / mf$memtotal_mot
+mf$tgen.memtotalprop.within <- mf$memtotal_tgen / mf$memtotal_mot
+mf$cgen.memtotalprop.within <- mf$memtotal_cgen / mf$memtotal_mot
+mf$truth.memtotalprop.within <- mf$memtotal_truth / mf$memtotal_mot
+mf$ctrl.memtotalprop.within <- mf$memtotal_ctrl / mf$memtotal_mot
+mf$prom.memtotalprop.within <- mf$memtotal_prom / mf$memtotal_mot
+mf$prev.memtotalprop.within <- mf$memtotal_prev / mf$memtotal_mot
+
+mf$prevtruth.memtotalprop <- mf$memtotal_prevtruth / 6
+mf$promtruth.memtotalprop <- mf$memtotal_promtruth / 6
+mf$prevctrl.memtotalprop <- mf$memtotal_prevctrl / 6
+mf$promctrl.memtotalprop <- mf$memtotal_promctrl / 6
+mf$tgen.memtotalprop <- mf$memtotal_tgen / 3
+mf$cgen.memtotalprop <- mf$memtotal_cgen / 3
+mf$truth.memtotalprop <- mf$memtotal_truth / 12
+mf$ctrl.memtotalprop <- mf$memtotal_ctrl / 12
+mf$prom.memtotalprop <- mf$memtotal_prom / 12
+mf$prev.memtotalprop <- mf$memtotal_prev /12
+
+memtotalprops <- unique(dplyr::select(mf, id, prevtruth.memtotalprop.within, promtruth.memtotalprop.within, prevctrl.memtotalprop.within, promctrl.memtotalprop.within, tgen.memtotalprop.within, cgen.memtotalprop.within, truth.memtotalprop.within, ctrl.memtotalprop.within, prom.memtotalprop.within, prev.memtotalprop.within, prevtruth.memtotalprop, promtruth.memtotalprop, prevctrl.memtotalprop, promctrl.memtotalprop, tgen.memtotalprop, cgen.memtotalprop, truth.memtotalprop, ctrl.memtotalprop, prom.memtotalprop, prev.memtotalprop))
+
+mfraw <- merge(mfraw, memtotalprops)
+rm(memtotalprops)
+
+# Within-person motive-specific memrank
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_process = mean(memrank[stimtype != "gen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_mot = mean(memrank[stimtype == "prevtruth" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_prevtruth = mean(memrank[stimtype == "prevtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_promtruth = mean(memrank[stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_prevctrl = mean(memrank[stimtype == "prevcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_promctrl = mean(memrank[stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_truth = mean(memrank[stimtype == "prevtruth" | stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_ctrl = mean(memrank[stimtype == "prevcontrol" | stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_prom = mean(memrank[stimtype == "promcontrol" | stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_prev = mean(memrank[stimtype == "prevcontrol" | stimtype == "prevtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_tgen = mean(memrank[stimtype == "tgen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_cgen = mean(memrank[stimtype == "cgen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(memrank_gen = mean(memrank[stimtype == "gen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf$memrank_promdom <- mf$memrank_prom - mf$memrank_prev
+
+memranks <- unique(dplyr::select(mf, id, memrank_process, memrank_mot, memrank_prevtruth, memrank_promtruth, memrank_promctrl, memrank_prevctrl, memrank_truth, memrank_ctrl, memrank_prom, memrank_prev, memrank_tgen, memrank_cgen, memrank_gen, memrank_promdom))
+
+mfraw <- merge(mfraw, memranks)
+rm(memranks)
+
+mfraw$memrank_prom_all <- mfraw$memrank_prom
+mfraw$memrank_prom_all <- ifelse(is.nan(mfraw$memrank_prom), -1 * (mfraw$memtotal + 1), mfraw$memrank_prom)
+mfraw$memrank_prom_all <- ifelse(mfraw$memrank_prom_all == 0, NA, mfraw$memrank_prom_all)
+mfraw$logmemrank_prom_all <- -1 * log(-1 * mfraw$memrank_prom_all)
+
+mfraw$memrank_prev_all <- mfraw$memrank_prev
+mfraw$memrank_prev_all <- ifelse(is.nan(mfraw$memrank_prev), -1 * (mfraw$memtotal + 1), mfraw$memrank_prev)
+mfraw$memrank_prev_all <- ifelse(mfraw$memrank_prev_all == 0, NA, mfraw$memrank_prev_all)
+mfraw$logmemrank_prev_all <- -1 * log(-1 * mfraw$memrank_prev_all)
+
+mfraw$memrank_all_promdom <- mfraw$memrank_prom_all - mfraw$memrank_prev_all
+mfraw$logmemrank_all_promdom <- mfraw$logmemrank_prom_all - mfraw$logmemrank_prev_all
+
+# Within-person motive-specific logmemrank
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_process = mean(logmemrank[stimtype != "gen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_mot = mean(logmemrank[stimtype == "prevtruth" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_prevtruth = mean(logmemrank[stimtype == "prevtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_promtruth = mean(logmemrank[stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_prevctrl = mean(logmemrank[stimtype == "prevcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_promctrl = mean(logmemrank[stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_truth = mean(logmemrank[stimtype == "prevtruth" | stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_ctrl = mean(logmemrank[stimtype == "prevcontrol" | stimtype == "promcontrol"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_prom = mean(logmemrank[stimtype == "promcontrol" | stimtype == "promtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_prev = mean(logmemrank[stimtype == "prevcontrol" | stimtype == "prevtruth"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_tgen = mean(logmemrank[stimtype == "tgen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_cgen = mean(logmemrank[stimtype == "cgen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf <- mf %>%
+  group_by(id) %>%
+  mutate(logmemrank_gen = mean(logmemrank[stimtype == "gen"], na.rm = TRUE)) %>%
+  ungroup()
+
+mf$logmemrank_promdom <- mf$logmemrank_prom - mf$logmemrank_prev
+
+logmemranks <- unique(dplyr::select(mf, id, logmemrank_process, logmemrank_mot, logmemrank_prevtruth, logmemrank_promtruth, logmemrank_promctrl, logmemrank_prevctrl, logmemrank_truth, logmemrank_ctrl, logmemrank_prom, logmemrank_prev, logmemrank_tgen, logmemrank_cgen, logmemrank_gen, logmemrank_promdom))
+
+mfraw <- merge(mfraw, logmemranks)
+rm(logmemranks)
+
+# Determinining which stimtype was remembered first, and then dummy-coding and merging
+memrankfirst <- mfraw %>%
+  group_by(id) %>%
+  gather(key = "memrank_first_stim", value = "memrank_first_stimrank", "mem_scrutinize", "mem_review", "mem_judge", "mem_assess", "mem_examine", "mem_verify", "mem_explore", "mem_invent", "mem_seek", "mem_discover", "mem_imagine", "mem_wonder", "mem_guard", "mem_resist", "mem_defend", "mem_protect", "mem_preserve", "mem_maintain", "mem_propel", "mem_accelerate", "mem_progress", "mem_elevate", "mem_lead", "mem_launch")
+memrankfirst$memrank_first_stim <- str_replace_all(memrankfirst$memrank_first_stim, fixed("mem_"), "")
+memrankfirst <- dplyr::select(memrankfirst, id, memrank_first_stim, memrank_first_stimrank)
+memrankfirst <- na.omit(memrankfirst, cols = "memrank_first_stimrank")
+memrankfirst <- memrankfirst %>%
+  group_by(id) %>%
+  mutate(minmemrank_rmf = min(memrank_first_stimrank, na.rm = TRUE)) %>%
+  mutate(firststim = memrank_first_stim[memrank_first_stimrank == minmemrank_rmf])
+
+# Breaking out a separate dataframe to determine ranks of first promotion and prevention
+memrankfirst_prom <- merge(memrankfirst, stimlist, by.x = "memrank_first_stim", by.y = "stim")
+memrankfirst_prom <- memrankfirst_prom %>%
+  group_by(id) %>%
+  filter(stimrf == "prom") %>%
+  mutate(minmemrank_prom = min(memrank_first_stimrank, na.rm = TRUE)) %>%
+  mutate(firststim_prom = memrank_first_stim[memrank_first_stimrank == minmemrank_prom])
+
+memrankfirst_prev <- merge(memrankfirst, stimlist, by.x = "memrank_first_stim", by.y = "stim")
+memrankfirst_prev <- memrankfirst_prev %>%
+  group_by(id) %>%
+  filter(stimrf == "prev") %>%
+  mutate(minmemrank_prev = min(memrank_first_stimrank, na.rm = TRUE)) %>%
+  mutate(firststim_prev = memrank_first_stim[memrank_first_stimrank == minmemrank_prev])
+
+memrankfirst$memrank_first_stim <- NULL
+memrankfirst$minmemrank_rmf <- NULL
+memrankfirst$memrank_first_stimrank <- NULL
+memrankfirst <- distinct(memrankfirst)
+memrankfirst <- memrankfirst %>%
+  rename(stim = firststim)
+memrankfirst <- merge(memrankfirst, stimlist, by = "stim")
+memrankfirst$stimnum <- NULL
+memrankfirst$freq <- NULL
+memrankfirst$length <- NULL
+memrankfirst$freq.s <- NULL
+memrankfirst$length.s <- NULL
+memrankfirst$stimtc.ord <- NULL
+memrankfirst$stimrf.ord <- NULL
+memrankfirst <- memrankfirst %>%
+  rename(memfirst_stim = stim, memfirst_rf = stimrf, memfirst_tc = stimtc, memfirst_stimtype = stimtype, memfirst_stimtype_ord = stimtype.ord)
+memrankfirst$memfirst_rf.e <- 0
+memrankfirst$memfirst_rf.e[memrankfirst$memfirst_rf == "prom"] <- .5
+memrankfirst$memfirst_rf.e[memrankfirst$memfirst_rf == "prev"] <- -.5
+memrankfirst$memfirst_rf.d <- 0
+memrankfirst$memfirst_rf.d[memrankfirst$memfirst_rf == "prom"] <- 1
+memrankfirst$memfirst_rf.d[memrankfirst$memfirst_rf == "prev"] <- 0
+memrankfirst$memfirst_tc.e <- 0
+memrankfirst$memfirst_tc.e[memrankfirst$memfirst_tc == "control"] <- .5
+memrankfirst$memfirst_tc.e[memrankfirst$memfirst_tc == "truth"] <- -.5
+memrankfirst$memfirst_tc.d <- 0
+memrankfirst$memfirst_tc.d[memrankfirst$memfirst_tc == "control"] <- 1
+memrankfirst$memfirst_tc.d[memrankfirst$memfirst_tc == "truth"] <- 0
+mfraw <- merge(mfraw, memrankfirst, by = "id", all = TRUE)
+rm(memrankfirst)
+
+memrankfirst_prom$memrank_first_stim <- NULL
+memrankfirst_prom$minmemrank_rmf <- NULL
+memrankfirst_prom$memrank_first_stimrank <- NULL
+memrankfirst_prom$firststim <- NULL
+memrankfirst_prom$stimnum <- NULL
+memrankfirst_prom$stimtype <- NULL
+memrankfirst_prom$stimtc <- NULL
+memrankfirst_prom$stimrf <- NULL
+memrankfirst_prom$freq <- NULL
+memrankfirst_prom$length <- NULL
+memrankfirst_prom$stimtype.ord <- NULL
+memrankfirst_prom$stimtc.ord <- NULL
+memrankfirst_prom$stimrf.ord <- NULL
+memrankfirst_prom <- distinct(memrankfirst_prom)
+memrankfirst_prom <- memrankfirst_prom %>% 
+  slice(1) %>% # takes the first occurrence if there is a tie
+  ungroup()
+mfraw <- merge(mfraw, memrankfirst_prom, by = "id", all.x = TRUE)
+mf <- merge(mf, memrankfirst_prom, by = "id", all.x = TRUE)
+rm(memrankfirst_prom)
+
+memrankfirst_prev$memrank_first_stim <- NULL
+memrankfirst_prev$minmemrank_rmf <- NULL
+memrankfirst_prev$memrank_first_stimrank <- NULL
+memrankfirst_prev$firststim <- NULL
+memrankfirst_prev$stimnum <- NULL
+memrankfirst_prev$stimtype <- NULL
+memrankfirst_prev$stimtc <- NULL
+memrankfirst_prev$stimrf <- NULL
+memrankfirst_prev$freq <- NULL
+memrankfirst_prev$length <- NULL
+memrankfirst_prev$stimtype.ord <- NULL
+memrankfirst_prev$stimtc.ord <- NULL
+memrankfirst_prev$stimrf.ord <- NULL
+memrankfirst_prev <- distinct(memrankfirst_prev)
+memrankfirst_prev <- memrankfirst_prev %>% 
+  slice(1) %>% # takes the first occurrence if there is a tie
+  ungroup()
+mfraw <- merge(mfraw, memrankfirst_prev, by = "id", all.x = TRUE)
+mf <- merge(mf, memrankfirst_prev, by = "id", all.x = TRUE)
+rm(memrankfirst_prev)
+
+mfraw$minmemrank_prom <- mfraw$minmemrank_prom * -1 # So higher = stronger
+mfraw$minmemrank_prev <- mfraw$minmemrank_prev * -1 # So higher = stronger
+mfraw$minmemrank_promdom <- mfraw$minmemrank_prom - mfraw$minmemrank_prev
+
+mfraw$memfirst_stimtype_ord <- factor(mfraw$memfirst_stimtype_ord, ordered = TRUE, levels = c("prevtruth", "promtruth", "prevcontrol", "promcontrol"))
+
+# Mean-centering predictors of interest
+mf$length <- nchar(as.character(mf$stim))
+mf$length.s <- as.numeric(scale(mf$length))
+mf$freq.s <- as.numeric(scale(mf$freq))
+mf$stimrf.e <- 0
+mf$stimrf.e[mf$stimrf == "prom"] <- .5
+mf$stimrf.e[mf$stimrf == "prev"] <- -.5
+mf$stimtc.e <- 0
+mf$stimtc.e[mf$stimtc == "control"] <- .5
+mf$stimtc.e[mf$stimtc == "truth"] <- -.5
+mf$memtotal.s <- as.numeric(scale(mf$memtotal))
+mf$memtotal_process.s <- as.numeric(scale(mf$memtotal_process))
+```
+
+# Save Cleaned Original Dataset
+
+```{r save}
+# SAVING CLEAN DATASETS
+save(mfraw, mf, blocked, nonenglish, nonenglishpct, improper_rfs, missing_rfs, file = "data/RFgoalpursuit_study2a_clean.RData")
+```
+
+# De-Identify Cleaned Dataset
+
+```{r deidentify}
+# REMOVE IP ADDRESSES AND LATITUDE/LONGITUDE FROM ALL DATAFRAMES SO THESE DE-IDENTIFIED DATA CAN BE PUBLICLY SHARED
+mfraw$IPAddress <- NULL
+mf$IPAddress <- NULL
+mfraw$LocationLatitude <- NULL
+mf$LocationLatitude <- NULL
+mfraw$LocationLongitude <- NULL
+mf$LocationLongitude <- NULL
+```
+
+# Save Cleaned and De-Identified Dataset
+
+```{r save_deidentified}
+# SAVING CLEAN DATASETS
+save(mfraw, mf, blocked, nonenglish, nonenglishpct, improper_rfs, missing_rfs, file = "data/RFgoalpursuit_study2a_clean_deidentified.RData")
+```

@@ -1,0 +1,788 @@
+---
+title             : "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities (Study 2B)"
+shorttitle        : "Prevention Versus Promotion Goal Pursuit Activities"
+
+author: 
+  - name          : "[Anonymized for Blind Peer Review]"
+
+bibliography      : ["rf-activities.bib"]
+
+floatsintext      : yes
+noextraspace      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : no
+mask              : no
+draft             : no
+
+header-includes   :
+  - \usepackage{setspace}
+  - \usepackage{makecell}
+  - \usepackage{float}
+  - \raggedbottom
+  - \usepackage[utf8]{inputenc}
+  - \DeclareUnicodeCharacter{2588}{-}
+  - \newcommand{\squeezeup}{\vspace{-10mm}}
+
+csl               : "apa.csl"
+documentclass     : "apa7"
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.pos="H")
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+```{r libs}
+# Load libraries
+library(papaja) # Required to generate APA-formatted manuscript
+library(citr) # Required to generate APA-formatted citations
+library(rIP) # Required so usage in data cleaning can be cited
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(broman) # Required for myround() function that doesn't truncate digits
+library(english) # Required to translate numbers into English text
+library(ggrepel) # Required for plots with text
+library(kableExtra) # Required for table styling
+library(brms) # Required for Bayesian multilevel models
+library(broom.mixed) # Required to extract random effects from Bayesian models
+library(Hmisc) # Required to calculate correlation significance
+
+# Define ggplot2 theme
+mytheme = theme_classic(base_size = 14) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = "black", size = 1),
+          strip.text.x = element_blank(),
+          panel.spacing = unit(0.1, "cm"),
+          panel.border = element_rect(color="black", size = 1, fill=NA),
+          text = element_text(family="Helvetica", size=14),
+          axis.line = element_blank(),
+          axis.text.x = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.text.y = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.ticks = element_line(size = .5),
+          axis.ticks.length=unit(-2, "mm"))
+theme_set(mytheme)
+
+# Define functions
+invlog <- function(x) {
+  1/(1 + exp(-(x)))
+}
+
+beff <- function(x) {
+  result <- as.character(x)
+  result <- str_replace_all(result, "\\)", "")
+  result <- str_replace(result, "^.+= ", "")
+  result <- as.numeric(result)
+  result <- myround(result, digits = 2)
+  return(result)
+}
+```
+
+Study 2B aimed to replicate the findings of Study 2A within a pre-registered lab study. Importantly, Study 2B differed from Study 2A in that we experimentally manipulated participants’ state regulatory focus using a well-established procedure. By using this regulatory focus strength manipulation (rather than measuring regulatory focus strength as in Study 2A), we were able to investigate whether differences in regulatory focus strength cause changes in the accessibility of motivationally relevant (*vs.* irrelevant) activities in the process of goal pursuit. We hypothesized that participants’ assigned regulatory focus strength induction would interact with activity regulatory focus to predict the log-transformed output rank of regulatory focus-specific process activities, such that participants who completed a promotion (*vs.* prevention) induction would tend to output promotion (*vs.* prevention) process activities earlier during the unaided recall task.
+
+## Method
+
+```{r s2b_load}
+load("data/RFgoalpursuit_study2b_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study1b2b_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s2b_ps}
+## N
+
+# Determine how many participants did not complete DV (i.e., remembered no activities from the framework) and exclude from dataframes
+nomem <- nrow(dplyr::filter(mfraw, memtotal == 0)) # 3 remembered no activities at all
+nomem_mot <- nrow(dplyr::filter(mfraw, memtotal_mot == 0)) # 3 remembered no activities from the framework
+mfraw <- dplyr::filter(mfraw, memtotal_mot > 0) # n = 119
+mf <- dplyr::filter(mf, memtotal_mot > 0)
+
+# Exclude blank (i.e., unremembered) activities from mf dataframe
+mf <- dplyr::filter(mf, !is.na(logmemrank))
+obs_all <- nrow(dplyr::filter(mf, !is.na(logmemrank))) # 1506
+
+# Subset mf dataframe to only include activities from the framework
+mf.rmf <- dplyr::filter(mf, stimtype == "prevtruth" | stimtype == "prevcontrol" | stimtype == "promtruth" | stimtype == "promcontrol") # n = 916
+
+# Calculate total number of observations and participants
+obs <- nrow(mf.rmf) # 916
+n <- length(unique(mf.rmf$id)) # n = 119
+
+# Calculate RF observations for each participant
+obsbyn <- mf.rmf %>%
+  filter(!is.na(mem.d)) %>%
+  count(id, sort = TRUE)
+obsbyn <- dplyr::rename(obsbyn, rfobs = n)
+
+## AGE
+
+meanage <- round(mean(mfraw$age, na.rm = TRUE), digits = 0) # 24
+maxage <- max(mfraw$age, na.rm = TRUE) # 68
+minage <- min(mfraw$age, na.rm = TRUE) # 18
+sdage <- round(sd(mfraw$age, na.rm = TRUE), digits = 0) # 6
+
+## GENDER
+
+male <- sum(mfraw$gender == "Male") # 44
+female <- sum(mfraw$gender == "Female") # 71
+malepct <- round(male/nrow(mfraw)*100, digits = 0) # 37%
+femalepct <- round(female/nrow(mfraw)*100, digits = 0) # 60%
+
+## ETHNICITY
+
+asianpct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Asian")) / nrow(mfraw) * 100, digits = 0) # 47% Asian
+blackpct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Black")) / nrow(mfraw) * 100, digits = 0) # 4% Black
+hisppct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Hispanic")) / nrow(mfraw) * 100, digits = 0) # 8% Hispanic
+multipct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Multiracial")) / nrow(mfraw) * 100, digits = 0) # 16% Multiracial
+natampct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Native Am.")) / nrow(mfraw) * 100, digits = 0) # 0% Native Am.
+whitepct <- round(nrow(dplyr::filter(mfraw, ethnicity == "White")) / nrow(mfraw) * 100, digits = 0) # 24% White
+
+## EDUCATION
+
+hspct <- round(nrow(dplyr::filter(mfraw, education == "High School")) / nrow(mfraw) * 100, digits = 0) # 12% High School
+somecolpct <- round(nrow(dplyr::filter(mfraw, education == "Some College")) / nrow(mfraw) * 100, digits = 0) # 31% Some College
+assocpct <- round(nrow(dplyr::filter(mfraw, education == "Associate's")) / nrow(mfraw) * 100, digits = 0) # 2% Associate's
+bachpct <- round(nrow(dplyr::filter(mfraw, education == "Bachelor's")) / nrow(mfraw) * 100, digits = 0) # 23% Bachelor's
+mastpct <- round(nrow(dplyr::filter(mfraw, education == "Master's")) / nrow(mfraw) * 100, digits = 0) # 27% Master's
+docpct <- round(nrow(dplyr::filter(mfraw, education == "Doctorate")) / nrow(mfraw) * 100, digits = 0) # 2% Doctorate
+```
+
+### Participants
+
+To determine the sample size for this study, we used `r cite_r(file = NULL)` to conduct a Bayesian equivalent of a power analysis following a simulation-based approach [@kurz2019]. Given that the effect of interest may be smaller than the effect found in Study 2A, our goal was to obtain power of 0.90 to detect an effect of *b*=0.20 at \( \alpha \)=0.05. The target sample size was 110 participants, and in order to (a) account for potential exclusions and (b) allow us to re-run all analyses among a sample of only native English speaking participants, we aimed to recruit 200 participants. We also pre-registered a stopping rule indicating that if we had collected data from at least 150 participants by the end of the Spring 2020 semester, despite not reaching the total sample size of 200, we would terminate data collection and proceed to data analysis.
+
+Data collection took place between February 2020 and March 2020. Participants were members of the university community at a university in the northeastern U.S. who had opted in to receiving recruitment materials from a behavioral research lab on campus. All participants were paid \$5. Although the pre-registration included a stopping rule of 150 participants, given the Covid-19 pandemic, data collection ended with a hiatus on human subjects research mandated by the university in March 2020. As a result, Study 2B includes data from the `r n + nomem_mot + improper_rfind` participants who were recruited prior to this hiatus. Among this recruited sample, three participants were excluded for failing to properly complete the regulatory focus induction manipulation (i.e., the primary independent variable), leaving a sample of `r n + nomem_mot` participants. Additionally, among these participants, `r english(nomem_mot)` participants failed to recall any activities from our framework at the end of the study (i.e., the primary dependent variable). These exclusions left a sample of `r n` participants ranging in age from `r minage` to `r maxage` (*M*=`r meanage`; *SD*=`r sdage`). Participants were male (`r malepct`%) and female (`r femalepct`%), with the remaining participants unspecified. They self-identified as Asian (`r asianpct`%), White (`r whitepct`%), multiracial (`r multipct`%), Hispanic (`r hisppct`%), and Black (`r blackpct`%). They indicated the highest level of formal education they have completed as a high school diploma (`r hspct`%), some college (`r somecolpct`%), an associate degree (`r assocpct`%), a bachelor's degree (`r bachpct`%), a master's degree (`r mastpct`%), and a doctorate (`r docpct`%). In accordance with the requirements of the research lab in which this study took place, data on participants' household income was not collected.
+
+Per the pre-defined exclusion criteria, we then examined the number of participants who responded that they were not native English speakers, as if this number fell below 10%, we would have excluded this group. Because `r nonenglish` of the remaining `r n` participants (`r myround(nonenglishpct * 100, digits = 1)`%) reported a native language other than English, these participants were *not* excluded from the primary analyses. As described in the study’s pre-registration, we also conducted all analyses excluding this group and noted very similar results (see Tables S29 and S30 in the Supplementary Material). A sensitivity analysis (G*Power; @fauletal2009) showed that this final sample could detect an effect size of $f^2$=0.07 or larger for the critical interaction between Activity Regulatory Focus and participants’ Regulatory Focus Induction Condition (power=0.80; \( \alpha \)=0.05; two-tailed; testing one of six total predictors).
+
+```{r s2b_subsets}
+# Exclude participants who did not complete DV (i.e., remembered no activities from the framework) from dataframes
+mfraw <- dplyr::filter(mfraw, memtotal_mot > 0) # n = 119
+mf <- dplyr::filter(mf, memtotal_mot > 0)
+
+# Exclude blank (i.e., unremembered) activities from mf dataframe
+mf <- dplyr::filter(mf, !is.na(logmemrank))
+
+# Subset mf dataframe to only include activities from the framework
+mf.rmf <- dplyr::filter(mf, stimtype == "prevtruth" | stimtype == "prevcontrol" | stimtype == "promtruth" | stimtype == "promcontrol") # n = 916
+
+# Data for 24 stimuli of interest with first 13 remembered activities (mean # of remembered activities)
+mf.rmf.f13 <- mf.rmf %>%
+  filter(memrank >= -13)
+
+# Data for 24 stimuli of interest for participants who remembered at least one promotion word and one prevention word
+mf.rmf.memboth <- mf.rmf %>%
+  filter(!is.na(logmemrank_promdom))
+```
+
+The dataset included `r obs_all` total recalled activities, `r obs` of which were regulatory focus-specific processes from the hypothesized framework. Among the sample of participants who recalled at least one of the 24 prevention and promotion goal pursuit process activities, the number of activities recalled ranged from `r min(obsbyn$rfobs)` to `r max(obsbyn$rfobs)` ($M$=`r myround(mean(obsbyn$rfobs), digits = 2)`, $SD$=`r myround(sd(obsbyn$rfobs), digits = 2)`). For exploratory purposes, we also conducted the primary analysis on a subset of the data including only the `r n_memboth` participants who recalled at least one promotion process activity *and* one prevention process activity (total number of regulatory focus-specific process activities recalled among this group=`r obs_memboth`). The results of this exploratory analysis can be found in Table S28 in the Supplementary Material.
+
+### Materials and Measures
+
+#### Regulatory Focus Strength Induction
+
+We experimentally manipulated regulatory focus strength by randomly assigning participants to respond to either a prevention or promotion induction prompt. Originally developed by Higgins, Roney, Crowe, and Hymes [-@higginsetal1994], these inductions have been used successfully in a number of studies examining the effects of regulatory focus strength on a range of different cognitive and behavioral outcomes [e.g., @freitashiggins2002; @higginsetal1986; @libermanetal2001; @scholeretal2010]. The induction prompts direct participants to spend five to seven minutes writing about how their current duties and obligations (prevention) versus hopes and aspirations (promotion) are different now from what they were when they were growing up.
+
+#### Activity List
+
+The activity list used in Study 2B was identical to the list of 39 activities used in Study 1B (see Table S23 in the Supplementary Material). Importantly, it included the same 12 goal pursuit activities hypothesized to relate to prevention processes and 12 goal pursuit activities hypothesized to relate to promotion processes. Similar to Study 2A, the regulatory focus of each of these process activities was effect-coded (–0.5=*prevention*; +0.5=*promotion*) and manipulated on a within-participants basis in the activity importance rating task described next.
+
+#### Activity Importance Rating Task
+
+The activity importance rating task used in Study 2B was very similar to the version of the task used in Study 2A, but it contained several minor differences. Given the slightly broadened activity list in Study 2B (39 *vs.* 36), participants made 39 activity ratings. Further, in Study 2B, activities were rated on a nine-point Likert scale (1=*not important at all* to 9=*absolutely essential*), rather than the 101-point sliding scale. Finally, although nearly all activities were presented and rated in a random order, the activity “sleep” was rated first by all participants.
+
+```{r s2b_rpm_timespent}
+rpm_timespent_sec <- (as.numeric(mfraw$rpm_2_t_Page.Submit) + as.numeric(mfraw$rpm_4_t_Page.Submit) +
+                        as.numeric(mfraw$rpm_9_t_Page.Submit) + as.numeric(mfraw$rpm_10_t_Page.Submit))
+
+rpm_timespent_min <- (as.numeric(mfraw$rpm_2_t_Page.Submit) + as.numeric(mfraw$rpm_4_t_Page.Submit) +
+                        as.numeric(mfraw$rpm_9_t_Page.Submit) + as.numeric(mfraw$rpm_10_t_Page.Submit))/60
+```
+
+#### Distractor Task
+
+In Study 2B, in order to adhere to timing and payment requirements in the research lab in which the study took place, we administered a condensed version of the distractor task used in Study 2A. This distractor task in Study 2B consisted of four pattern-completion items from Raven’s Progressive Matrices [@ravenraven2003]. On average, this distraction lasted `r myround(mean(rpm_timespent_min), digits = 2)` minutes.
+
+#### Unaided Recall Task
+
+In Study 2B, to measure the accessibility (i.e., output rank) of each activity, participants completed an unaided recall task nearly identical to the unaided recall task administered in Study 2A, but with 39 blank text boxes instead of 36 (to reflect the difference in the length of the activity list). As in Study 2A, research assistants hand-coded the data from this task to ensure the inclusion of any activities recalled with minor misspellings or different verb forms. For each recalled activity, coders noted the output rank of the activity, and these output ranks were log-transformed to normalize the distributions and multiplied by –1 so that higher scores indicated greater output primacy. Then, these output rank data were dummy-coded to produce a binary measure of output (0=*not recalled*; 1=*recalled*), and an output total score was calculated by summing the number of activities that each participant recalled and rescaling these sums (*M*=0; *SD*=1).
+
+```{r s2b_rf.eff}
+# Promotion Pride
+prom.eff_mean <- myround(mean(mfraw$prom.eff, na.rm = T), digits = 2)
+prom.eff_sd <- myround(sd(mfraw$prom.eff, na.rm = T), digits = 2)
+prom.eff <- dplyr::select(mfraw, rfq_1, rfq_3, rfq_7, rfq_9, rfq_10, rfq_11)
+prom.eff$rfq_1 <- 6 - prom.eff$rfq_1
+prom.eff$rfq_9 <- 6 - prom.eff$rfq_9
+prom.eff$rfq_11 <- 6 - prom.eff$rfq_11
+prom.eff_a <- myround(psych::alpha(prom.eff)$total["raw_alpha"], digits = 2)
+rm(prom.eff)
+
+# Prevention Pride
+prev.eff_mean <- myround(mean(mfraw$prev.eff, na.rm = T), digits = 2)
+prev.eff_sd <- myround(sd(mfraw$prev.eff, na.rm = T), digits = 2)
+prev.eff <- dplyr::select(mfraw, rfq_2, rfq_4, rfq_5, rfq_6, rfq_8)
+prev.eff$rfq_2 <- 6 - prev.eff$rfq_2
+prev.eff$rfq_4 <- 6 - prev.eff$rfq_4
+prev.eff$rfq_6 <- 6 - prev.eff$rfq_6
+prev.eff$rfq_8 <- 6 - prev.eff$rfq_8
+prev.eff_a <- myround(psych::alpha(prev.eff)$total["raw_alpha"], digits = 2)
+rm(prev.eff)
+```
+
+```{r s2b_rm}
+# Locomotion
+loc_mean <- myround(mean(mfraw$loc, na.rm = T), digits = 2)
+loc_sd <- myround(sd(mfraw$loc, na.rm = T), digits = 2)
+loc <- dplyr::select(mfraw, rmq_1, rmq_3, rmq_4, rmq_5, rmq_8, rmq_16, rmq_21, rmq_25, rmq_28, rmq_29, rmq_13, rmq_24)
+loc$rmq_13 <- 7 - loc$rmq_13
+loc$rmq_24 <- 7 - loc$rmq_24
+loc_a <- psych::alpha(loc)$total$raw_alpha
+rm(loc)
+
+# Assessment
+ass_mean <- myround(mean(mfraw$ass, na.rm = T), digits = 2)
+ass_sd <- myround(sd(mfraw$ass, na.rm = T), digits = 2)
+ass <- dplyr::select(mfraw, rmq_2, rmq_6, rmq_7, rmq_9, rmq_10, rmq_11, rmq_15, rmq_19, rmq_20, rmq_22, rmq_27, rmq_30)
+ass$rmq_2 <- 7 - ass$rmq_2
+ass$rmq_10 <- 7 - ass$rmq_10
+ass$rmq_27 <- 7 - ass$rmq_27
+ass_a <- psych::alpha(ass)$total$raw_alpha
+rm(ass)
+```
+
+#### Further Measures
+
+As in Studies 1A and 1B, to control for any potential effects of stimulus length or frequency, we measured each of these variables for all activities. Additionally, we measured participants’ prevention pride (*M*=`r prev.eff_mean`; *SD*=`r prev.eff_sd`; \( \alpha \)=`r prev.eff_a`) and promotion pride (*M*=`r prom.eff_mean`; *SD*=`r prom.eff_sd`; \( \alpha \)=`r prom.eff_a`) scores using the RFQ [@higginsetal2001], and their assessment (*M*=`r ass_mean`; *SD*=`r ass_sd`; \( \alpha \)=`r ass_a`) and locomotion (*M*=`r loc_mean`; *SD*=`r loc_sd`; \( \alpha \)=`r loc_a`) orientations using the RMQ [@kruglanskietal2000].
+
+### Procedure
+
+This study involved an experimental lab design containing two purportedly separate studies. The purpose of this “multiple-study paradigm” design was to prevent participants’ responses to tasks they completed in the first part of the study from biasing their performance in later tasks. Upon providing consent, participants learned that they would begin a purported Study 1 investigating how people’s standards change over time. Using complete random assignment, each participant was assigned to one of the two between-subjects regulatory focus induction conditions (prevention *vs.* promotion). After completing this induction, participants were directed to a purported Study 2 on the topic of motivation and problem solving. Participants then proceeded to the activity importance rating task, thus encountering all 39 activities for the first time. Then, participants completed the brief distractor task, which was followed by the unaided recall task probing the output primacy of the various activities. After completing these tasks, participants completed two exploratory motivational measures: the RMQ and the RFQ. Finally, participants optionally provided brief demographic information and were debriefed, thanked, and compensated.
+
+## Results
+
+### Analytic Strategy
+
+As in Study 2A, and in line with Hypothesis 3, we predicted that the accessibility of prevention versus promotion process activities, operationalized as output rank, would be associated with participants’ regulatory focus strength. However, one key difference in Study 2B was that regulatory focus strength was manipulated, rather than measured. Thus, the primary analysis examined whether the interaction between the hypothesized regulatory focus of a given process activity and each participant’s *experimentally induced* regulatory focus strength predicted the log-transformed output rank of the activity. Like our analytic approach in Studies 1A and 1B, we selected the subset of the data comprising only activities we hypothesized to reflect prevention- or promotion-specific processes (*N*=`r obs`) and analyzed these data within a Bayesian multilevel regression analysis. This model was specified identically to the model used in Study 2A’s primary analysis, with the exception of participants’ promotion (*vs.* prevention) strength dominance; in Study 2B, this variable was replaced with an effect-coded variable reflecting participants’ regulatory focus induction condition (–0.5=*prevention*, +0.5=*promotion*).
+
+```{r s2b_memtotal_cors}
+# set.seed(1234)
+# memtotal_condition <- brm(bf(mvbind(memtotal, condition.e) ~ 1) + set_rescor(TRUE), data = mfraw, chains = 4, cores = 4)
+# save(memtotal_condition, file = "models/memtotal_condition_2b.rda")
+load("models/memtotal_condition_2b.rda")
+# summary(memtotal_condition) # r = .16 [-.01, .33]
+memtotal_condition_cor <- as.data.frame(summary(memtotal_condition)$rescor_pars)
+memtotal_condition_cor_r <- myround(memtotal_condition_cor$Estimate, digits = 2)
+memtotal_condition_cor_Q2.5 <- myround(memtotal_condition_cor$`l-95% CI`, digits = 2)
+memtotal_condition_cor_Q97.5 <- myround(memtotal_condition_cor$`u-95% CI`, digits = 2)
+
+# set.seed(1234)
+# memtotal_memrank <- brm(bf(mvbind(memtotal, logmemrank_mot) ~ 1) + set_rescor(TRUE), data = mfraw, chains = 4, cores = 4)
+# save(memtotal_memrank, file = "models/memtotal_memrank_2b.rda")
+load("models/memtotal_memrank_2b.rda")
+# summary(memtotal_memrank) # r = -.78 [-.84, -.70]
+memtotal_memrank_cor <- as.data.frame(summary(memtotal_memrank)$rescor_pars)
+memtotal_memrank_cor_r <- myround(memtotal_memrank_cor$Estimate, digits = 2)
+memtotal_memrank_cor_Q2.5 <- myround(memtotal_memrank_cor$`l-95% CI`, digits = 2)
+memtotal_memrank_cor_Q97.5 <- myround(memtotal_memrank_cor$`u-95% CI`, digits = 2)
+```
+
+Additionally, as in Study 2A, we were particularly interested in how output *rank* (i.e., a measure of output primacy) was influenced by the interaction between induced regulatory focus strength and the hypothesized regulatory focus, beyond any differences in output *total*. These initial analyses revealed two sets of correlations between participants’ output total and two variables included in the primary analyses, including participants’ effect-coded regulatory focus induction condition (*r* = `r memtotal_condition_cor_r`; 95% CI: `r memtotal_condition_cor_Q2.5`, `r memtotal_condition_cor_Q97.5`) and participants’ average log-transformed output rank for activities from the hypothesized framework (*r* = `r memtotal_memrank_cor_r`; 95% CI: `r memtotal_memrank_cor_Q2.5`, `r memtotal_memrank_cor_Q97.5`). Given these correlations, like in Study 2A, we conducted a “leave-one-out” cross-validation analysis comparing models including versus excluding output total, and this analysis indicated that the model *with* this covariate had greater expected predictive accuracy. Thus, as in Study 2A, the results of this revised model are included below. (All results using the original pre-registered model *without* output total included as a covariate are provided in and following Table S26 in the Supplementary Material.) For descriptive statistics and correlations among all variables included within these models, see Table S24 in the Supplementary Material.
+
+Further, because we hypothesized that accessible activities would be recalled earliest in the memory task, as in Study 2A, we also conducted the primary analysis with a subset of the data containing only the first 13 activities that participants recalled within the unaided recall task, because these earlier (*vs.* later) recalled activities are more likely to reflect output primacy. As a result, we report the results of both our analyses conducted the full dataset as well as the results of analyses that included only the regulatory focus-specific process activities included in participants’ first 13 recalled activities below. Additionally, we conducted an exploratory exact binomial test of goodness-of-fit to examine differences in the accessibility (i.e., output rank) of prevention versus promotion process activities between the two induction conditions. Although these exploratory analyses were not pre-registered, we provide the results of these investigations below.
+
+Finally, although the primary analysis contains data for all participants, given that these analyses differentiate between the average output rank for promotion versus prevention process activities, we also conducted these analyses only including data for participants who remembered at least one promotion activity and at least one prevention activity. The results of these analyses are presented in Table S28 in the Supplementary Material.
+
+``` {r s2b_memtotal_promdom}
+mfraw$memtotal_promdom <- mfraw$memtotal_prom - mfraw$memtotal_prev
+
+# Bayesian regression with random intercepts for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# memtotal_promdom_2b <- brm(memtotal_promdom ~ 1, data = mfraw, cores = 4, chains = 4)
+# save(memtotal_promdom_2b, file = "models/memtotal_promdom_2b.rda")
+load("models/memtotal_promdom_2b.rda")
+#summary(memtotal_promdom_2b)
+
+memtotal_promdom_diff_Q2.5 <- myround(fixef(memtotal_promdom_2b)["Intercept", "Q2.5"], digits = 2)
+memtotal_promdom_diff_Q97.5 <- myround(fixef(memtotal_promdom_2b)["Intercept", "Q97.5"], digits = 2)
+```
+
+### Output Total: Number of Activities Recalled
+
+On average, participants recalled `r myround(mean(mfraw$memtotal), digits = 2)` total activities (*SD*=`r myround(sd(mfraw$memtotal), digits = 2)`) in the unaided recall task. Among these recalled activities, participants recalled an average of `r myround(mean(mfraw$memtotal_mot), digits = 2)` activities that we hypothesized were associated with prevention or promotion processes (*SD*=`r myround(sd(mfraw$memtotal_mot), digits = 2)`), comprising an average of `r myround(mean(mfraw$memtotal_prev), digits = 2)` prevention activities (*SD*=`r myround(sd(mfraw$memtotal_prev), digits = 2)`) and `r myround(mean(mfraw$memtotal_prom), digits = 2)` promotion activities (*SD*=`r myround(sd(mfraw$memtotal_prom), digits = 2)`). However, by estimating the difference between the number of promotion versus prevention process activities recalled within a Bayesian linear regression model, we determined that this difference did not differ from zero (95% CI: `r memtotal_promdom_diff_Q2.5`, `r memtotal_promdom_diff_Q97.5`).
+
+``` {r s2b_logmemrank_promdom}
+# Bayesian regression with random intercepts for each stimulus and participant
+# set.seed(1234)
+# logmemrank_promdom_2b <- brm(logmemrank_promdom ~ 1, data = mfraw, cores = 4, chains = 4)
+# save(logmemrank_promdom_2b, file = "models/logmemrank_promdom_2b.rda")
+load("models/logmemrank_promdom_2b.rda")
+# summary(logmemrank_promdom_2b)
+
+logmemrank_promdom_diff_Q2.5 <- myround(fixef(logmemrank_promdom_2b)["Intercept", "Q2.5"], digits = 3)
+logmemrank_promdom_diff_Q97.5 <- myround(fixef(logmemrank_promdom_2b)["Intercept", "Q97.5"], digits = 2)
+```
+
+### Output Rank: Primacy of Activities Recalled
+
+Across participants, the average log-transformed output rank among the recalled activities in the unaided recall task was `r myround(mean(mf$logmemrank, na.rm = T), digits = 2)` (*SD*=`r myround(sd(mf$logmemrank, na.rm = T), digits = 2)`). In contrast to Study 2A, promotion process activities (*M*=`r myround(mean(mf$logmemrank[mf$stimrf == "prom"], na.rm = T), digits = 2)`; *SD*=`r myround(sd(mf$logmemrank[mf$stimrf == "prom"], na.rm = T), digits = 2)`) tended to be recalled slightly earlier than prevention process activities (*M*=`r myround(mean(mf$logmemrank[mf$stimrf == "prev"], na.rm = T), digits = 2)`; *SD*=`r myround(sd(mf$logmemrank[mf$stimrf == "prev"], na.rm = T), digits = 2)`). However, by estimating the difference between log-transformed output rank promotion versus prevention process activities within a Bayesian linear regression model, we determined that this difference did not differ from zero (95% CI: `r logmemrank_promdom_diff_Q2.5`, `r logmemrank_promdom_diff_Q97.5`).
+
+### Primary Analysis: Does the Interaction Between Participants’ Induced Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_memtotal}
+## PRIMARY ANALYSIS
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf, cores = 4, chains = 4)
+# save(mlmlogmemrankb_memtotal_2b, file = "models/mlmlogmemrankb_memtotal_2b.rda")
+load("models/mlmlogmemrankb_memtotal_2b.rda")
+# summary(mlmlogmemrankb_memtotal_2b) # ns, right direction
+
+table7 <- broom::tidy(mlmlogmemrankb_memtotal_2b)
+table7 <- rename(table7, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+table7$Type <- NULL
+table7$component <- NULL
+table7$Estimate <- round(table7$Estimate, digits = 2)
+table7$Post.SD <- round(table7$Post.SD, digits = 2)
+table7$Lower <- round(table7$Lower, digits = 2)
+table7$Upper <- round(table7$Upper, digits = 2)
+table7 <- table7[!(table7$Effect == "cor__(Intercept).freq.s"), ]
+table7 <- table7[!(table7$Effect == "cor__(Intercept).length.s"), ]
+table7 <- table7[!(table7$Effect == "cor__freq.s.length.s"), ]
+table7 <- table7[!(table7$Effect == "sd__Observation"), ]
+table7 <- table7[!(table7$Effect == "sd__(Intercept)"), ]
+table7 <- table7[!(table7$Effect == "sd__freq.s"), ]
+table7 <- table7[!(table7$Effect == "sd__length.s"), ]
+table7$Effect[table7$Effect == "(Intercept)"] <- "Intercept"
+table7$Effect[table7$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5=Prev.; +0.5=Prom.)"
+table7$Effect[table7$Effect == "condition.e"] <- "RF Induction Condition (-0.5=Prev.; +0.5=Prom.)"
+table7$Effect[table7$Effect == "memtotal.s"] <- "Output Total"
+table7$Effect[table7$Effect == "freq.s"] <- "Frequency of Use in English Language"
+table7$Effect[table7$Effect == "length.s"] <- "Length"
+table7$Effect[table7$Effect == "stimrf.e:condition.e"] <- "Activity RF×RF Induction Condition"
+table7[is.na(table7)] <- ""
+table7$group <- NULL
+```
+
+```{r table7}
+table7_print <- kable(table7, "latex", booktabs = TRUE, caption = "Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Fixed Effects Only)") %>%
+  kable_styling(latex_options = c("scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("DV: Log-Transformed Output Rank (Higher=More Accessible)", 1, 7) %>%
+  row_spec(7, bold = T) %>%
+  footnote(general = "RF=Regulatory Focus; Prom.=Promotion; Prev.=Prevention. Effects for the predictor of interest are shown in bold. For the complete results of this analysis, including random effects, see Table S25 in the Supplementary Material.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+We hypothesized that the interaction between participants’ promotion (*vs.* prevention) strength dominance and the regulatory focus of each prevention- or promotion-specific process activity in the hypothesized framework would predict that activity’s log-transformed output rank. To investigate this question, we examined the model output from the Bayesian multilevel regression analysis (see Table 7). The effect size for this interaction was `r beff(table7[7, "Estimate"])` units, with a 95% credible interval that included zero (`r beff(table7[7, "Lower"])`, `r beff(table7[7, "Upper"])`). Based on this credible interval, contrary to Hypothesis 3, these results did *not* indicate that the interaction between these variables influences regulatory focus-specific process activities’ output rank. Additionally, this analysis indicated that output total was the only predictor of log-transformed output rank (*b*=`r beff(table7[4, "Estimate"])`; 95% CI: `r beff(table7[4, "Lower"])`, `r beff(table7[4, "Upper"])`).
+
+```{r table7_print, include = TRUE, results = 'asis'}
+table7_print
+```
+
+### Exploratory Analysis: When Examining Activities with the Greatest Output Primacy, Does the Interaction Between Participants’ Induced Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_f13_memtotal}
+## EXPLORATORY ANALYSIS: FIRST 13 OUTPUTTED ACTIVITIES ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_f13_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf.f13, cores = 4, chains = 4)
+# save(mlmlogmemrankb_f13_memtotal_2b, file = "models/mlmlogmemrankb_f13_memtotal_2b.rda")
+load("models/mlmlogmemrankb_f13_memtotal_2b.rda")
+# summary(mlmlogmemrankb_f13_memtotal_2b)
+
+table8 <- broom::tidy(mlmlogmemrankb_f13_memtotal_2b)
+table8 <- rename(table8, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+table8$Type <- NULL
+table8$component <- NULL
+table8$Estimate <- round(table8$Estimate, digits = 2)
+table8$Post.SD <- round(table8$Post.SD, digits = 2)
+table8$Upper <- round(table8$Upper, digits = 2)
+table8 <- table8[!(table8$Effect == "cor__(Intercept).freq.s"), ]
+table8 <- table8[!(table8$Effect == "cor__(Intercept).length.s"), ]
+table8 <- table8[!(table8$Effect == "cor__freq.s.length.s"), ]
+table8 <- table8[!(table8$Effect == "sd__Observation"), ]
+table8 <- table8[!(table8$Effect == "sd__(Intercept)"), ]
+table8 <- table8[!(table8$Effect == "sd__freq.s"), ]
+table8 <- table8[!(table8$Effect == "sd__length.s"), ]
+table8$Effect[table8$Effect == "(Intercept)"] <- "Intercept"
+table8$Effect[table8$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5=Prev.; +0.5=Prom.)"
+table8$Effect[table8$Effect == "condition.e"] <- "RF Induction Condition (-0.5=Prev.; +0.5=Prom.)"
+table8$Effect[table8$Effect == "memtotal.s"] <- "Output Total"
+table8$Effect[table8$Effect == "freq.s"] <- "Frequency of Use in English Language"
+table8$Effect[table8$Effect == "length.s"] <- "Length"
+table8$Effect[table8$Effect == "stimrf.e:condition.e"] <- "Activity RF×RF Induction Condition"
+table8[is.na(table8)] <- ""
+table8[1:6,"Lower"] <- round(table8[1:6,"Lower"], digits = 2)
+table8[7,"Lower"] <- round(table8[7,"Lower"], digits = 3)
+table8$Lower <- as.character(table8$Lower)
+table8$group <- NULL
+```
+
+```{r table8}
+table8_print <- kable(table8, "latex", booktabs = TRUE, caption = "Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Data from First 13 Outputted Activities Only; Fixed Effects Only)") %>%
+  kable_styling(latex_options = c("scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("DV: Log-Transformed Output Rank (Higher=More Accessible)", 1, 7) %>%
+  row_spec(7, bold = T) %>%
+  footnote(general = "RF=Regulatory Focus; Prom.=Promotion; Prev.=Prevention. Effects for the predictor of interest are shown in bold. For the complete results of these analyses, including random effects, see Table S27 in the Supplementary Material.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+Like in Study 2A, we also conducted an exploratory analysis with a subset of the data containing only the first 13 activities recalled by participants. The model output from this Bayesian multilevel regression analysis indicated an effect size for the interaction of interest of `r beff(table8[7, "Estimate"])` units, with a 95% credible interval that did not cross zero (`r myround(fixef(mlmlogmemrankb_f13_memtotal_2b)["stimrf.e:condition.e", "Q2.5"], digits = 3)`, `r beff(table8[7, "Upper"])`; see Table 8 and Figure 6). Based on this credible interval and the positive direction of the effect, these results supported Hypothesis 3, suggesting that the interaction between these variables influenced the log-transformed output rank of prevention- and promotion-specific goal pursuit process activities when examining only participants’ first 13 recalled activities.
+
+```{r table8_print, include = TRUE, results = 'asis'}
+table8_print
+```
+
+```{r s2b_logmemrank_plot}
+# Determining predictions for average participant and promotion stimuli as a function of promotion
+promstim.prom.pred.data <- NULL
+for (i in unique(mf.rmf.f13$id)) {
+  data <- data.frame(
+    stimrf.e = .5,
+    condition = "Promotion",
+    condition.e = .5,
+    memtotal.s = 0,
+    freq.s = 0,
+    length.s = 0,
+    id = i)
+  promstim.prom.pred.data <- rbind(promstim.prom.pred.data, data)
+}
+promstim.prom.pred.data <- cbind(promstim.prom.pred.data, fitted(mlmlogmemrankb_f13_memtotal_2b, promstim.prom.pred.data, re_formula=NA, incl_autocor = F, probs = c(0.025, 0.08, 0.92, 0.975)))
+promstim.prom.pred.data$logpred <- exp(-1 * promstim.prom.pred.data$Estimate)
+promstim.prom.pred.data$logpred2.5 <- exp(-1 * promstim.prom.pred.data$`Q2.5`)
+promstim.prom.pred.data$logpred97.5 <- exp(-1 * promstim.prom.pred.data$`Q97.5`)
+promstim.prom.pred.data$pred <- -1 * promstim.prom.pred.data$Estimate
+promstim.prom.pred.data$pred2.5 <- -1 * promstim.prom.pred.data$`Q2.5`
+promstim.prom.pred.data$pred97.5 <- -1 * promstim.prom.pred.data$`Q97.5`
+promstim.prom.pred.data$pred8 <- -1 * promstim.prom.pred.data$`Q8`
+promstim.prom.pred.data$pred92 <- -1 * promstim.prom.pred.data$`Q92`
+promstim.prom.pred.data$predminus1se <- promstim.prom.pred.data$pred - promstim.prom.pred.data$Est.Error
+promstim.prom.pred.data$predplus1se <- promstim.prom.pred.data$pred + promstim.prom.pred.data$Est.Error
+promstim.prom.pred.data$logpredminus1se <- exp(promstim.prom.pred.data$predminus1se)
+promstim.prom.pred.data$logpredplus1se <- exp(promstim.prom.pred.data$predplus1se)
+
+# Determining predictions for average participant and prevention stimuli as a function of promotion
+prevstim.prom.pred.data <- NULL
+for (i in unique(mf.rmf.f13$id)) {
+  data <- data.frame(
+    stimrf.e = -.5,
+    condition = "Promotion",
+    condition.e = .5,
+    memtotal.s = 0,
+    freq.s = 0,
+    length.s = 0,
+    id = i)
+  prevstim.prom.pred.data <- rbind(prevstim.prom.pred.data, data)
+}
+prevstim.prom.pred.data <- cbind(prevstim.prom.pred.data, fitted(mlmlogmemrankb_f13_memtotal_2b, prevstim.prom.pred.data, re_formula=NA, incl_autocor = F, probs = c(0.025, 0.08, 0.92, 0.975)))
+prevstim.prom.pred.data$logpred <- exp(-1 * prevstim.prom.pred.data$Estimate)
+prevstim.prom.pred.data$logpred2.5 <- exp(-1 * prevstim.prom.pred.data$`Q2.5`)
+prevstim.prom.pred.data$logpred97.5 <- exp(-1 * prevstim.prom.pred.data$`Q97.5`)
+prevstim.prom.pred.data$pred <- -1 * prevstim.prom.pred.data$Estimate
+prevstim.prom.pred.data$pred2.5 <- -1 * prevstim.prom.pred.data$`Q2.5`
+prevstim.prom.pred.data$pred97.5 <- -1 * prevstim.prom.pred.data$`Q97.5`
+prevstim.prom.pred.data$pred8 <- -1 * prevstim.prom.pred.data$`Q8`
+prevstim.prom.pred.data$pred92 <- -1 * prevstim.prom.pred.data$`Q92`
+prevstim.prom.pred.data$predminus1se <- prevstim.prom.pred.data$pred - prevstim.prom.pred.data$Est.Error
+prevstim.prom.pred.data$predplus1se <- prevstim.prom.pred.data$pred + prevstim.prom.pred.data$Est.Error
+prevstim.prom.pred.data$logpredminus1se <- exp(prevstim.prom.pred.data$predminus1se)
+prevstim.prom.pred.data$logpredplus1se <- exp(prevstim.prom.pred.data$predplus1se)
+
+# Determining predictions for average participant and promotion stimuli as a function of prevention
+promstim.prev.pred.data <- NULL
+for (i in unique(mf.rmf.f13$id)) {
+  data <- data.frame(
+    stimrf.e = .5,
+    condition = "Prevention",
+    condition.e = -.5,
+    memtotal.s = 0,
+    freq.s = 0,
+    length.s = 0,
+    id = i)
+  promstim.prev.pred.data <- rbind(promstim.prev.pred.data, data)
+}
+promstim.prev.pred.data <- cbind(promstim.prev.pred.data, fitted(mlmlogmemrankb_f13_memtotal_2b, promstim.prev.pred.data, re_formula=NA, incl_autocor = F, probs = c(0.025, 0.08, 0.92, 0.975)))
+promstim.prev.pred.data$logpred <- exp(-1 * promstim.prev.pred.data$Estimate)
+promstim.prev.pred.data$logpred2.5 <- exp(-1 * promstim.prev.pred.data$`Q2.5`)
+promstim.prev.pred.data$logpred97.5 <- exp(-1 * promstim.prev.pred.data$`Q97.5`)
+promstim.prev.pred.data$pred <- -1 * promstim.prev.pred.data$Estimate
+promstim.prev.pred.data$pred2.5 <- -1 * promstim.prev.pred.data$`Q2.5`
+promstim.prev.pred.data$pred97.5 <- -1 * promstim.prev.pred.data$`Q97.5`
+promstim.prev.pred.data$pred8 <- -1 * promstim.prev.pred.data$`Q8`
+promstim.prev.pred.data$pred92 <- -1 * promstim.prev.pred.data$`Q92`
+promstim.prev.pred.data$predminus1se <- promstim.prev.pred.data$pred - promstim.prev.pred.data$Est.Error
+promstim.prev.pred.data$predplus1se <- promstim.prev.pred.data$pred + promstim.prev.pred.data$Est.Error
+promstim.prev.pred.data$logpredminus1se <- exp(promstim.prev.pred.data$predminus1se)
+promstim.prev.pred.data$logpredplus1se <- exp(promstim.prev.pred.data$predplus1se)
+
+# Determining predictions for average participant and prevention stimuli as a function of prevention
+prevstim.prev.pred.data <- NULL
+for (i in unique(mf.rmf.f13$id)) {
+  data <- data.frame(
+    stimrf.e = -.5,
+    condition = "Prevention",
+    condition.e = -.5,
+    memtotal.s = 0,
+    freq.s = 0,
+    length.s = 0,
+    id = i)
+  prevstim.prev.pred.data <- rbind(prevstim.prev.pred.data, data)
+}
+prevstim.prev.pred.data <- cbind(prevstim.prev.pred.data, fitted(mlmlogmemrankb_f13_memtotal_2b, prevstim.prev.pred.data, re_formula=NA, incl_autocor = F, probs = c(0.025, 0.08, 0.92, 0.975)))
+prevstim.prev.pred.data$logpred <- exp(-1 * prevstim.prev.pred.data$Estimate)
+prevstim.prev.pred.data$logpred2.5 <- exp(-1 * prevstim.prev.pred.data$`Q2.5`)
+prevstim.prev.pred.data$logpred97.5 <- exp(-1 * prevstim.prev.pred.data$`Q97.5`)
+prevstim.prev.pred.data$pred <- -1 * prevstim.prev.pred.data$Estimate
+prevstim.prev.pred.data$pred2.5 <- -1 * prevstim.prev.pred.data$`Q2.5`
+prevstim.prev.pred.data$pred97.5 <- -1 * prevstim.prev.pred.data$`Q97.5`
+prevstim.prev.pred.data$pred8 <- -1 * prevstim.prev.pred.data$`Q8`
+prevstim.prev.pred.data$pred92 <- -1 * prevstim.prev.pred.data$`Q92`
+prevstim.prev.pred.data$predminus1se <- prevstim.prev.pred.data$pred - prevstim.prev.pred.data$Est.Error
+prevstim.prev.pred.data$predplus1se <- prevstim.prev.pred.data$pred + prevstim.prev.pred.data$Est.Error
+prevstim.prev.pred.data$logpredminus1se <- exp(prevstim.prev.pred.data$predminus1se)
+prevstim.prev.pred.data$logpredplus1se <- exp(prevstim.prev.pred.data$predplus1se)
+
+# Generate plot
+fig6 <- ggplot(data = promstim.prom.pred.data, aes(x = condition, y = pred)) +
+  geom_point(data = filter(mf.rmf.f13, condition == "Prevention" | condition == "Promotion"), aes(x = condition, y = -1 * logmemrank, fill = stimrf, color = stimrf, shape = stimrf),
+             alpha = .3, position = position_jitterdodge(jitter.width = .25,
+                                                         jitter.height = .25,
+                                                         dodge.width = .6, seed = 1234)) +
+  geom_point(data = promstim.prom.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(.15)) +
+  geom_point(data = prevstim.prom.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(-.15)) +
+  geom_point(data = promstim.prev.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(.15)) +
+  geom_point(data = prevstim.prev.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(-.15)) +
+  geom_errorbar(data = promstim.prom.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(.15)) +
+  geom_errorbar(data = prevstim.prom.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(-.15)) +
+  geom_errorbar(data = promstim.prev.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(.15)) +
+  geom_errorbar(data = prevstim.prev.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(-.15)) +
+  labs(x = "Regulatory Focus Induction Condition", y = "Log-Transformed Output Rank", fill = "Activity\nRegulatory\nFocus", color = "Activity\nRegulatory\nFocus", shape = "Activity\nRegulatory\nFocus") +
+  scale_fill_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_color_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention")) +
+  scale_y_continuous(trans = "reverse") +
+  theme(legend.position = "right",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10))
+```
+
+```{r s2b_logmemrank_plot_bw}
+# Generate plot - Black & White
+fig6_bw <- ggplot(data = promstim.prom.pred.data, aes(x = condition, y = pred)) +
+  geom_point(data = filter(mf.rmf.f13, condition == "Prevention" | condition == "Promotion"), aes(x = condition, y = -1 * logmemrank, fill = stimrf, color = stimrf, shape = stimrf),
+             alpha = .3, position = position_jitterdodge(jitter.width = .25,
+                                                         jitter.height = .25,
+                                                         dodge.width = .6, seed = 1234)) +
+  geom_point(data = promstim.prom.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(.15)) +
+  geom_point(data = prevstim.prom.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(-.15)) +
+  geom_point(data = promstim.prev.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(.15)) +
+  geom_point(data = prevstim.prev.pred.data, aes(x = condition, y = pred, group = NULL),
+             color = "black", size = 2, position = position_nudge(-.15)) +
+  geom_errorbar(data = promstim.prom.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(.15)) +
+  geom_errorbar(data = prevstim.prom.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(-.15)) +
+  geom_errorbar(data = promstim.prev.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(.15)) +
+  geom_errorbar(data = prevstim.prev.pred.data, aes(ymin = predminus1se, ymax = predplus1se),
+                     width = .27, color = "black", size = .3, position = position_nudge(-.15)) +
+  labs(x = "Regulatory Focus Induction Condition", y = "Log-Transformed Output Rank", fill = "Activity\nRegulatory\nFocus", color = "Activity\nRegulatory\nFocus", shape = "Activity\nRegulatory\nFocus") +
+  scale_fill_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_color_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention")) +
+  scale_y_continuous(trans = "reverse") +
+  theme(legend.position = "right",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10))
+```
+
+(ref:fig6cap) Log-Transformed Output Rank for Promotion Versus Prevention Process Activities as a Function of Promotion Strength Dominance (Study 2B; Data from First 13 Outputted Activities Only)
+
+```{r fig6, include = TRUE, fig.cap = "(ref:fig6cap)", fig.align = "center", out.width = '90%', out.height = '90%'}
+fig6
+```
+
+\squeezeup
+
+\begingroup
+\setlength{\parindent}{0in}
+*Note.* Model-predicted log-transformed output rank for promotion versus prevention process activities as a function of participants’ regulatory focus induction condition, at typical levels of output total, activity frequency of use in the English language, and activity length. The log-transformed output rank values on the Y-axis have been reversed so that output ranks higher in the plot indicate greater accessibility. The red (dark gray) squares represent outputted prevention process activities. The green (light gray) circles represent outputted promotion process activities. Error bars represent standard errors.
+\endgroup
+
+```{r s2b_binomial}
+## EXPLORATORY ANALYSIS
+# Binomial exact test
+
+# Develop activity-specific summaries
+stimsummary.rmf.f13.prom <- mf.rmf.f13 %>%
+  filter(condition == "Promotion") %>%
+  group_by(stim) %>%
+  filter(stimtype == "prevtruth" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "promcontrol") %>%
+  summarise(mean.logmemrank = mean(logmemrank, na.rm= T), sd.memrank = sd(memrank, na.rm = T),
+            mean.mem.d = mean(mem.d, na.rm= T), n.mem.d = sum(mem.d, na.rm = T)) %>%
+  merge(stimlist)
+
+stimsummary.rmf.f13.prev <- mf.rmf.f13 %>%
+  filter(condition == "Prevention") %>%
+  group_by(stim) %>%
+  filter(stimtype == "prevtruth" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "promcontrol") %>%
+  summarise(mean.logmemrank = mean(logmemrank, na.rm= T), sd.memrank = sd(memrank, na.rm = T),
+            mean.mem.d = mean(mem.d, na.rm= T), n.mem.d = sum(mem.d, na.rm = T)) %>%
+  merge(stimlist)
+
+# Prepare dataframes for merge, and then merge
+stimsummary.rmf.f13.promprev1 <- stimsummary.rmf.f13.prom %>%
+  dplyr::rename(mean.logmemrank.prom = mean.logmemrank) %>%
+  dplyr::select(stim, mean.logmemrank.prom, n.mem.d, stimtype, stimtc, stimrf, length.s, freq.s)
+
+stimsummary.rmf.f13.promprev2 <- stimsummary.rmf.f13.prev %>%
+  rename(mean.logmemrank.prev = mean.logmemrank) %>%
+  dplyr::select(stim, mean.logmemrank.prev)
+
+stimsummary.rmf.f13.promprev <- merge(stimsummary.rmf.f13.promprev1, stimsummary.rmf.f13.promprev2, by = "stim")
+rm(stimsummary.rmf.f13.prom, stimsummary.rmf.f13.prev, stimsummary.rmf.f13.promprev1, stimsummary.rmf.f13.promprev2)
+
+# Calculate mean logmemrank promotion-dominance for each activity
+stimsummary.rmf.f13.promprev$mean.logmemrank.promdom <- stimsummary.rmf.f13.promprev$mean.logmemrank.prom - stimsummary.rmf.f13.promprev$mean.logmemrank.prev
+
+# Gather data for binomial test and export to Excel
+binomial <- stimsummary.rmf.f13.promprev %>%
+  dplyr::select(stim, stimrf, mean.logmemrank.promdom)
+write.csv(binomial, "data/RFgoalpursuit_study2b_binomialtest.csv")
+
+# Binomial test: Is ordering of logmemrank promdom correct in each promotion-prevention activity pair?
+binom <- binom.test(x = 109, n = 144, p = .5, alternative = "two.sided", conf.level = .95) # p < .001
+
+# Plot differences
+fig7 <- ggplot(stimsummary.rmf.f13.promprev, aes(x = 1.5, y = mean.logmemrank.promdom, label = stim)) +
+  geom_vline(aes(xintercept = 1.5), alpha = .3) +
+  scale_fill_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                    labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                    name = "Activity\nRegulatory\nFocus") +
+  scale_color_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                     name = "Activity\nRegulatory\nFocus") +
+  scale_shape_manual(values = c("prev" = 22, "prom" = 21),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                     name = "Activity\nRegulatory\nFocus") +
+  geom_point(aes(fill = as.factor(stimrf), color = as.factor(stimrf), shape = as.factor(stimrf)), alpha = .5, size = 3) + 
+  labs(x = "", y = "Difference in Log-Transformed Output Rank\n(Promotion Induction – Prevention Induction)") +
+  geom_text_repel(aes(label = stim), size = 4, segment.alpha = .5, force = 25) +
+  theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +
+  xlim(0,3) +
+  coord_flip()
+```
+
+```{r s2b_binomial_bw}
+# Plot differences - Black & White
+fig7_bw <- ggplot(stimsummary.rmf.f13.promprev, aes(x = 1.5, y = mean.logmemrank.promdom, label = stim)) +
+  geom_vline(aes(xintercept = 1.5), alpha = .3) +
+  scale_fill_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                    labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                    name = "Activity\nRegulatory\nFocus") +
+  scale_color_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                     name = "Activity\nRegulatory\nFocus") +
+  scale_shape_manual(values = c("prev" = 22, "prom" = 21),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion"),
+                     name = "Activity\nRegulatory\nFocus") +
+  geom_point(aes(fill = as.factor(stimrf), color = as.factor(stimrf), shape = as.factor(stimrf)), alpha = .5, size = 3) + 
+  labs(x = "", y = "Difference in Log-Transformed Output Rank\n(Promotion Induction – Prevention Induction)") +
+  geom_text_repel(aes(label = stim), size = 4, segment.alpha = .5, force = 25) +
+  theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) +
+  xlim(0,3) +
+  coord_flip()
+```
+
+### Exploratory Analysis: Binomial Exact Test
+
+In addition to the Bayesian regression analyses described above, we also conducted an exploratory binomial exact test of goodness-of-fit to compare on an activity-specific basis the log-transformed output rank of prevention versus promotion process activities among participants who completed a prevention versus promotion strength induction. Beginning with the subset of data comprising participants’ first 13 recalled process activities in the recall task, we calculated the mean log-transformed output rank for each regulatory focus-specific activity in the prevention condition and the promotion condition. Next, for each of these activities, we calculated an activity-specific promotion (*vs.* prevention) dominance score in terms of log-transformed output rank by subtracting the mean in the prevention condition from the mean in the promotion condition. Then, we compared each of the promotion process activities with each of the prevention process activities based upon these activity-specific output rank promotion-dominance scores (see Figure 7 for a visualization of these scores). Given that the dataset included such scores for 12 promotion activities and 12 prevention activities, we compared these scores for 144 activity pairs. In 109 of these 144 activity pairs, the promotion activity had an output rank score higher in promotion-dominance than the prevention activity (in line with Hypothesis 3). Importantly, if these activities did not differ in their relevance to the promotion versus prevention systems, we would not have expected the proportion of activity pairings in line with our hypotheses to differ from chance (i.e., 72 of the 144 pairings). Based on a two-sided binomial test, these observed values differ significantly from the “chance” proportion, *p* < .0001.
+
+(ref:fig7cap) Difference in Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities in the Promotion Versus Prevention Strength Induction Conditions (Study 2B; Data from First 13 Outputted Activities Only)
+
+```{r fig7, include = TRUE, fig.cap = "(ref:fig7cap)", fig.align = "center", out.width = '90%', out.height = '90%'}
+fig7
+```
+
+\squeezeup
+
+\begingroup
+\setlength{\parindent}{0in}
+*Note.* Mean difference in log-transformed output rank for each regulatory focus-specific process activity among participants in the promotion versus prevention strength induction conditions, when calculated based on the subset of data containing participants’ first 13 recalled activities. The red (dark gray) squares represent prevention process activities. The green (light gray) circles represent promotion process activities. On average, activities with values greater than zero were more accessible following a promotion (vs. prevention) induction; activities with values less than zero were more accessible following a prevention (vs. promotion) induction.
+\endgroup
+
+## Discussion
+
+Study 2B provided some additional evidence for Hypothesis 3, revealing that the interaction between regulatory focus strength and activity regulatory focus produced differences in the accessibility of regulatory focus-specific process activities when specifically examining the 13 activities outputted first in the unaided recall task. This evidence from Bayesian regression analyses similar to those conducted in Study 2A was complemented by converging evidence from the exploratory binomial exact test.
+
+Interestingly, when the primary analysis was conducted with the log-transformed output rank data outputted at *any* point in the unaided recall task (*vs.* the first 13 recalled activities), the size of the interaction effect of interest was approximately halved and the 95% credible interval for interaction effect shifted to include zero. This finding may illuminate an important boundary condition of the effects highlighted in the present research: While inducing a promotion or prevention focus does appear to influence the accessibility of relevant process activities, the extent of this effect may depend on output primacy. Additionally, although we found a slight increase in the size of the key interaction effect in Study 2A when examining only the first 13 recalled activities, this difference was far larger in Study 2B. This distinction may relate to the fact that participants’ regulatory focus in Study 2A was determined using a measure of their chronic regulatory focus, whereas in Study 2B, we created a situational change in regulatory focus using an experimental manipulation. In practical terms, these minor differences in the results of Studies 2A and 2B suggest that although a given situation may prime a prevention or promotion focus, and this state regulatory focus may influence the relevance of different goal pursuit activities, this increase in motivational relevance may not be maintained indefinitely. In contrast, individual differences in the dominance of people’s regulatory focus strength may be relatively more stable. Together with the results of Study 2A, these findings provided converging experimental support for our hypothesized framework.
+
+# General Discussion
+
+Although the prevention and promotion systems posited within regulatory focus theory are known to be associated with distinct goal pursuit activities, investigations into these associations have seemingly lacked a comprehensive guiding framework. To the best of our knowledge, the present research is the first to put forth such a framework, which details the different kinds of truth- and control-oriented goal pursuit process activities motivated by prevention and promotion. By combining regulatory focus theory, which traditionally has been conceptualized in the domain of value, with truth and control, this novel framework integrates distinct theories of motivation that have not previously been studied together. In doing so, it highlights the dynamic interplay of various motivational systems that drive human behavior.
+
+Across four studies using both experimental and correlational methods, results indicated that the associations between (a) the prevention and promotion systems and (b) regulatory focus-specific goal pursuit process activities are broadly available, highly accessible, and interact with individual differences in regulatory focus strength to predict the activities’ motivational relevance. This work contributes to the motivation and self-regulation literatures by extending the distinction between the prevention system’s preference for vigilance and the promotion system’s preference for eagerness [@crowehiggins1997; @higginsetal1994] to propose how these general tendencies influence the motivational relevance of specific activities involved in the process of goal pursuit. It integrates past regulatory focus research examining system-specific preferences related to topics as wide-ranging as curiosity, political ideology, discounting under uncertainty, and leadership styles. Given that these preferences relate to areas of psychology spanning cognition, judgment and decision making, and social influence, it is our hope that this framework will be useful and generative in suggesting opportunities for future research to scholars from a wide range of disciplines.
+
+```{r s2_memtotal_comparison}
+# Study 2B
+s2b_memtotal <- myround(mean(mfraw$memtotal), digits = 2)
+
+# Study 2A
+load("data/RFgoalpursuit_study2a_clean_deidentified.RData")
+mfraw <- dplyr::filter(mfraw, memtotal_mot > 0)
+s2a_memtotal <- myround(mean(mfraw$memtotal), digits = 2)
+```
+
+## Limitations and Future Directions
+
+Despite its strengths, the present research has its limitations. Most notably, although we found that individual differences in participants’ regulatory focus strength predicted the accessibility of process activities relevant to their predominant regulatory focus in Study 2A, when experimentally manipulating participants’ state regulatory focus in Study 2B, we only found evidence for the hypothesized effect when examining a smaller group of activities outputted earliest by these participants. It is possible that differences in the samples’ engagement in the studies produced this difference in the effect. As evidence for this explanation, M-Turk participants who recalled at least one activity in Study 2A outputted `r s2a_memtotal` activities on average, whereas the university participants who recalled at least one activity in Study 2B outputted an average of `r s2b_memtotal` activities. It may be the case that the interaction between participants’ regulatory focus (measured *or* manipulated) and activities’ regulatory focus only affect initial output (*vs.* an entire stream of output), but that we were not able to detect this difference among the M-Turk sample because the number of activities participants outputted simply did not reach this threshold. However, an alternative explanation is also possible. It may be the case that the activation of the regulatory focus induced by the priming in Study 2B decreased throughout the course of the study, thus impacting more strongly the activities that were outputted earlier (*vs.* later). Further research is required to determine if either of these possible explanations is correct. Importantly, if follow-up research indicates that the priming does, in fact, wear off during the course of the study, future work should be done to confirm this shift in accessibility and pinpoint its time course. Understanding the duration during which such an induction is effective would be particularly important for researchers interested in developing interventions to promote specific types of goal pursuit processes.
+
+The present research also offers broader avenues for future work. With the proposed framework as a guide, researchers can explore how the interactions of these systems relate to other motivational constructs. For instance, this research suggests that the promotion and prevention systems may motivate distinct truth-seeking activities in the process of goal pursuit. Given that promotion-focused truth-oriented activities reflect the generation and growth of knowledge (e.g., *explore*, *discover*), we would predict that a promotion focus will be uniquely associated with trait measures of epistemic curiosity, particularly subscales related to joyous exploration [@kashdanetal2018] and interest [@litmanspielberger2003]. In contrast, given that prevention-focused truth-oriented activities reflect a desire for certainty and error minimization (e.g., *judge*, *verify*), we would predict that a prevention focus will be uniquely associated with the need for closure [in particular, preferences for order and predictability, as well as discomfort with ambiguity; @kruglanskietal1993; @websterkruglanski1994]. Such work is important because these distinct truth-oriented activities are critical to an effective goal pursuit process, yet must be deployed strategically; for example, knowledge refinement is often only useful once enough knowledge has been gathered first through curious exploration.
+
+Finally, this framework has important implications for the study of goal-directed behavior and performance, and offers an approach to begin filling critical gaps in the field’s knowledge of goal pursuit processes. This proposal is grounded in Eitam and Higgins’ [-@eitamhiggins2010] relevance of a representation framework, which posits that motivationally relevant constructs influence cognition and behavior. If the prevention versus promotion systems systematically motivate distinct goal pursuit process activities as suggested by the present research, future studies should examine these proposed behavioral implications explicitly. We would hypothesize that: (a) these associations between regulatory focus and goal pursuit activities will be reflected in actual behavioral choices, and (b) present concern with each of these four motive domains will enhance performance on activities in that domain. To test these hypotheses experimentally, researchers could manipulate participants’ current motivational concerns by creating writing inductions specific to each activity domain and then measure task choice and performance. By going beyond accessibility measures to investigate how the interactions of these motives affect behavior, this future research will provide valuable insight on why and how the process of goal pursuit varies across individuals and situations. Furthermore, if such work indicates that these motive inductions effectively influence behavior and performance, these results would suggest how, through related real-world interventions, people might engage in more productive and enjoyable goal pursuit journeys. For instance, scholars might apply this knowledge to determine how individuals, managers, and educators can strategically promote the specific kinds of truth and control activities befitting the goals of themselves, their teams, or their students. Given that both economic success and well-being relate to how effectively people pursue their goals [@ameriksetal2003; @klugmaier2015], we suggest that this is a worthy aim.
+
+\newpage
+\begin{center}
+References
+\end{center}
+
+```{r create_r-references}
+r_refs(file = "manuscript/rf-activities.bib")
+```
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup

@@ -1,0 +1,3077 @@
+---
+title             : "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities (Supplementary Material)"
+author            : "[Anonymized for Blind Peer Review]"
+
+bibliography      : ["rf-activities.bib"]
+
+header-includes   :
+  - \usepackage{setspace}
+  - \usepackage{makecell}
+  - \raggedbottom
+  - \usepackage[utf8]{inputenc}
+  - \DeclareUnicodeCharacter{2588}{-}
+
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+```{r libs}
+# Load libraries
+library(papaja) # Required to generate APA-formatted manuscript
+library(citr) # Required to generate APA-formatted citations
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(broman) # Required for myround() function that doesn't truncate digits
+library(english) # Required to translate numbers into English text
+library(ggrepel) # Required for plots with text
+library(kableExtra) # Required for table styling
+library(brms) # Required for Bayesian multilevel models
+library(broom.mixed) # Required to extract random effects from Bayesian models
+library(Hmisc) # Required to calculate correlation significance
+
+# Define ggplot2 theme
+mytheme = theme_classic(base_size = 14) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = "black", size = 1),
+          strip.text.x = element_blank(),
+          panel.spacing = unit(0.1, "cm"),
+          panel.border = element_rect(color="black", size = 1, fill=NA),
+          text = element_text(family="Helvetica", size=14),
+          axis.line = element_blank(),
+          axis.text.x = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.text.y = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.ticks = element_line(size = .5),
+          axis.ticks.length=unit(-2, "mm"))
+theme_set(mytheme)
+```
+
+\newpage
+
+# Study 1A
+
+## Activity List
+
+**Table S1**
+
+*Original Activity List (Study 1A)*
+
+```{r s1aactlist, include = TRUE, results = 'asis'}
+tables1 <- read.csv(file="data/RFgoalpursuit_study1a_actlist.csv", header = TRUE)
+tables1 %>%
+  kable("latex", booktabs = TRUE, align = 'ccc') %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  group_rows("Truth-Oriented Process Activities", 1, 3) %>%
+  group_rows("Control-Oriented Process Activities", 4, 6) %>%
+  group_rows("Practice Verbs (Outcome Attainment Activities)", 7, 7) %>%
+  row_spec(0, align = "c") %>%
+  footnote(general = "Activities in the prevention-truth, prevention-control, promotion-truth, and promotion-control categories were treated as regulatory focus-specific goal pursuit activities in our primary and secondary analyses.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+**Table S2**
+
+*Refined Activity List (Study 1A)*
+
+```{r s1arevactlist, include = TRUE, results = 'asis'}
+tables2 <- read.csv(file="data/RFgoalpursuit_study1a_revactlist.csv", header = TRUE)
+tables2 %>%
+  kable("latex", booktabs = TRUE, align = 'ccc') %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  group_rows("Truth-Oriented Process Activities", 1, 2) %>%
+  group_rows("Control-Oriented Process Activities", 3, 4) %>%
+  group_rows("Practice Verbs (Outcome Attainment Activities)", 5, 5) %>%
+  row_spec(0, align = "c") %>%
+  footnote(general = "Activities in the prevention-truth, prevention-control, promotion-truth, and promotion-control categories were treated as regulatory focus-specific goal pursuit activities in our primary and secondary analyses.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+\newpage
+
+```{r s1a_load}
+load("data/RFgoalpursuit_study1a_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study1a_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s1a_subsets}
+# Subsets based on original predicted RF for Study 1A
+rftest <- mf %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  mutate(rfornot = case_when(stimrf == "prom" | stimrf == "prev" ~ "rf", stimrf == "gen" ~ "gen"),
+         rfornot.d = case_when(stimrf == "prom" | stimrf == "prev" ~ 1, stimrf == "gen" ~ 0))
+
+rftest_rmf <- rftest %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth")
+
+# Subsets based on final predicted RF for Study 1B
+rftest_1a1b <- mf %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  filter(stimrf_1b != "na") %>%
+  mutate(rfornot_1b = case_when(stimrf_1b == "prom" | stimrf_1b == "prev" ~ "rf", stimrf_1b == "gen" ~ "gen"),
+         rfornot_1b.d = case_when(stimrf_1b == "prom" | stimrf_1b == "prev" ~ 1, stimrf_1b == "gen" ~ 0))
+
+rftest_rmf_1a1b <- rftest_1a1b %>%
+  filter(stimtype_1b == "promcontrol" | stimtype_1b == "promtruth" | stimtype_1b == "prevcontrol" | stimtype_1b == "prevtruth")
+```
+
+\newpage
+
+## Descriptive Statistics and Inter-Variable Correlations
+
+```{r s1a_desccors, include = TRUE, results = 'asis'}
+desc_nostd <- dplyr::select(rftest, rfcat.d, rflogrt, stimrf.d, rfornot.d, promdom.eff, rftrial, rfleft.e, freq, length)
+desc_nostd <- rename(desc_nostd, "Activity\nCategorization" = rfcat.d, "Log-\nTransformed\nResponse\nLatency" = rflogrt, "Hypothesized\nActivity RF" = stimrf.d, "Hypothesized\nRF-Specific\nActivity" = rfornot.d, "Prom. (vs.\nPrev.) Pride\nDominance" = promdom.eff, "Trial" = rftrial, "Order of\nCategory\nLabels" = rfleft.e, "Frequency\nof Use in\nEnglish\nLanguage" = freq, "Length " = length)
+means <- desc_nostd %>%
+  dplyr::summarize_all(funs(mean(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(Mean = V1)
+sds <- desc_nostd %>%
+  dplyr::summarize_all(funs(sd(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(SD = V1)
+tables3_desc <- cbind(means, sds)
+rm(desc_nostd, means, sds)
+tables3_desc$` ` <- 1:9
+tables3_desc$Variable <- rownames(tables3_desc)
+tables3_desc <- dplyr::select(tables3_desc, ` `, Variable, Mean, SD)
+rownames(tables3_desc) <- c("1", "2", "3", "4", "5", "6", "7", "8", "9")
+tables3_desc$Mean <- myround(tables3_desc$Mean, digits = 2)
+tables3_desc$SD <- myround(tables3_desc$SD, digits = 2)
+
+# 1. rfcat.d
+# 2. rflogrt
+# 3. stimrf.d
+# 4. rfornot.d
+# 5. promdom.effc
+# 6. rftrialcs
+# 7. rfleft.e
+# 8. freq.s
+# 9. length.s
+
+# cor_1_2 <- brm(bf(mvbind(rfcat.d, rflogrt) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_2, file = "models/cor_1_2_1a.rda")
+load("models/cor_1_2_1a.rda")
+# summary(cor_1_2)
+cor_1_2 <- as.data.frame(summary(cor_1_2)$rescor_pars)
+cor_1_2 <- paste(myround(cor_1_2[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_2[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_2[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_3 <- brm(bf(mvbind(rfcat.d, stimrf.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_3, file = "models/cor_1_3_1a.rda")
+load("models/cor_1_3_1a.rda")
+# summary(cor_1_3)
+cor_1_3 <- as.data.frame(summary(cor_1_3)$rescor_pars)
+cor_1_3 <- paste(myround(cor_1_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_4 <- brm(bf(mvbind(rfcat.d, rfornot.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_4, file = "models/cor_1_4_1a.rda")
+load("models/cor_1_4_1a.rda")
+# summary(cor_1_4)
+cor_1_4 <- as.data.frame(summary(cor_1_4)$rescor_pars)
+cor_1_4 <- paste(myround(cor_1_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_5 <- brm(bf(mvbind(rfcat.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_5, file = "models/cor_1_5_1a.rda")
+load("models/cor_1_5_1a.rda")
+# summary(cor_1_5)
+cor_1_5 <- as.data.frame(summary(cor_1_5)$rescor_pars)
+cor_1_5 <- paste(myround(cor_1_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_6 <- brm(bf(mvbind(rfcat.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_6, file = "models/cor_1_6_1a.rda")
+load("models/cor_1_6_1a.rda")
+# summary(cor_1_6)
+cor_1_6 <- as.data.frame(summary(cor_1_6)$rescor_pars)
+cor_1_6 <- paste(myround(cor_1_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_7 <- brm(bf(mvbind(rfcat.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_7, file = "models/cor_1_7_1a.rda")
+load("models/cor_1_7_1a.rda")
+# summary(cor_1_7)
+cor_1_7 <- as.data.frame(summary(cor_1_7)$rescor_pars)
+cor_1_7 <- paste(myround(cor_1_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_8 <- brm(bf(mvbind(rfcat.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_8, file = "models/cor_1_8_1a.rda")
+load("models/cor_1_8_1a.rda")
+# summary(cor_1_8)
+cor_1_8 <- as.data.frame(summary(cor_1_8)$rescor_pars)
+cor_1_8 <- paste(myround(cor_1_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_9 <- brm(bf(mvbind(rfcat.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_9, file = "models/cor_1_9_1a.rda")
+load("models/cor_1_9_1a.rda")
+# summary(cor_1_9)
+cor_1_9 <- as.data.frame(summary(cor_1_9)$rescor_pars)
+cor_1_9 <- paste(myround(cor_1_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_3 <- brm(bf(mvbind(rflogrt, stimrf.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_3, file = "models/cor_2_3_1a.rda")
+load("models/cor_2_3_1a.rda")
+# summary(cor_2_3)
+cor_2_3 <- as.data.frame(summary(cor_2_3)$rescor_pars)
+cor_2_3 <- paste(myround(cor_2_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_4 <- brm(bf(mvbind(rflogrt, rfornot.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_4, file = "models/cor_2_4_1a.rda")
+load("models/cor_2_4_1a.rda")
+# summary(cor_2_4)
+cor_2_4 <- as.data.frame(summary(cor_2_4)$rescor_pars)
+cor_2_4 <- paste(myround(cor_2_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_5 <- brm(bf(mvbind(rflogrt, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_5, file = "models/cor_2_5_1a.rda")
+load("models/cor_2_5_1a.rda")
+# summary(cor_2_5)
+cor_2_5 <- as.data.frame(summary(cor_2_5)$rescor_pars)
+cor_2_5 <- paste(myround(cor_2_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_6 <- brm(bf(mvbind(rflogrt, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_6, file = "models/cor_2_6_1a.rda")
+load("models/cor_2_6_1a.rda")
+# summary(cor_2_6)
+cor_2_6 <- as.data.frame(summary(cor_2_6)$rescor_pars)
+cor_2_6 <- paste(myround(cor_2_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_7 <- brm(bf(mvbind(rflogrt, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_7, file = "models/cor_2_7_1a.rda")
+load("models/cor_2_7_1a.rda")
+# summary(cor_2_7)
+cor_2_7 <- as.data.frame(summary(cor_2_7)$rescor_pars)
+cor_2_7 <- paste(myround(cor_2_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_8 <- brm(bf(mvbind(rflogrt, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_8, file = "models/cor_2_8_1a.rda")
+load("models/cor_2_8_1a.rda")
+# summary(cor_2_8)
+cor_2_8 <- as.data.frame(summary(cor_2_8)$rescor_pars)
+cor_2_8 <- paste(myround(cor_2_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_9 <- brm(bf(mvbind(rflogrt, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_9, file = "models/cor_2_9_1a.rda")
+load("models/cor_2_9_1a.rda")
+# summary(cor_2_9)
+cor_2_9 <- as.data.frame(summary(cor_2_9)$rescor_pars)
+cor_2_9 <- paste(myround(cor_2_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+cor_3_4 <- "—"
+
+# cor_3_5 <- brm(bf(mvbind(stimrf.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_5, file = "models/cor_3_5_1a.rda")
+load("models/cor_3_5_1a.rda")
+# summary(cor_3_5)
+cor_3_5 <- as.data.frame(summary(cor_3_5)$rescor_pars)
+cor_3_5 <- paste(myround(cor_3_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_6 <- brm(bf(mvbind(stimrf.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_6, file = "models/cor_3_6_1a.rda")
+load("models/cor_3_6_1a.rda")
+# summary(cor_3_6)
+cor_3_6 <- as.data.frame(summary(cor_3_6)$rescor_pars)
+cor_3_6 <- paste(myround(cor_3_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_7 <- brm(bf(mvbind(stimrf.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_7, file = "models/cor_3_7_1a.rda")
+load("models/cor_3_7_1a.rda")
+# summary(cor_3_7)
+cor_3_7 <- as.data.frame(summary(cor_3_7)$rescor_pars)
+cor_3_7 <- paste(myround(cor_3_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_8 <- brm(bf(mvbind(stimrf.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_8, file = "models/cor_3_8_1a.rda")
+load("models/cor_3_8_1a.rda")
+# summary(cor_3_8)
+cor_3_8 <- as.data.frame(summary(cor_3_8)$rescor_pars)
+cor_3_8 <- paste(myround(cor_3_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_9 <- brm(bf(mvbind(stimrf.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_9, file = "models/cor_3_9_1a.rda")
+load("models/cor_3_9_1a.rda")
+# summary(cor_3_9)
+cor_3_9 <- as.data.frame(summary(cor_3_9)$rescor_pars)
+cor_3_9 <- paste(myround(cor_3_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_5 <- brm(bf(mvbind(rfornot.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_5, file = "models/cor_4_5_1a.rda")
+load("models/cor_4_5_1a.rda")
+# summary(cor_4_5)
+cor_4_5 <- as.data.frame(summary(cor_4_5)$rescor_pars)
+cor_4_5 <- paste(myround(cor_4_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_6 <- brm(bf(mvbind(rfornot.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_6, file = "models/cor_4_6_1a.rda")
+load("models/cor_4_6_1a.rda")
+# summary(cor_4_6)
+cor_4_6 <- as.data.frame(summary(cor_4_6)$rescor_pars)
+cor_4_6 <- paste(myround(cor_4_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_7 <- brm(bf(mvbind(rfornot.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_7, file = "models/cor_4_7_1a.rda")
+load("models/cor_4_7_1a.rda")
+# summary(cor_4_7)
+cor_4_7 <- as.data.frame(summary(cor_4_7)$rescor_pars)
+cor_4_7 <- paste(myround(cor_4_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_8 <- brm(bf(mvbind(rfornot.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_8, file = "models/cor_4_8_1a.rda")
+load("models/cor_4_8_1a.rda")
+# summary(cor_4_8)
+cor_4_8 <- as.data.frame(summary(cor_4_8)$rescor_pars)
+cor_4_8 <- paste(myround(cor_4_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_9 <- brm(bf(mvbind(rfornot.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_9, file = "models/cor_4_9_1a.rda")
+load("models/cor_4_9_1a.rda")
+# summary(cor_4_9)
+cor_4_9 <- as.data.frame(summary(cor_4_9)$rescor_pars)
+cor_4_9 <- paste(myround(cor_4_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_6 <- brm(bf(mvbind(promdom.effc, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_6, file = "models/cor_5_6_1a.rda")
+load("models/cor_5_6_1a.rda")
+# summary(cor_5_6)
+cor_5_6 <- as.data.frame(summary(cor_5_6)$rescor_pars)
+cor_5_6 <- paste(myround(cor_5_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_7 <- brm(bf(mvbind(promdom.effc, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_7, file = "models/cor_5_7_1a.rda")
+load("models/cor_5_7_1a.rda")
+# summary(cor_5_7)
+cor_5_7 <- as.data.frame(summary(cor_5_7)$rescor_pars)
+cor_5_7 <- paste(myround(cor_5_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_8 <- brm(bf(mvbind(promdom.effc, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_8, file = "models/cor_5_8_1a.rda")
+load("models/cor_5_8_1a.rda")
+# summary(cor_5_8)
+cor_5_8 <- as.data.frame(summary(cor_5_8)$rescor_pars)
+cor_5_8 <- paste(myround(cor_5_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_9 <- brm(bf(mvbind(promdom.effc, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_9, file = "models/cor_5_9_1a.rda")
+load("models/cor_5_9_1a.rda")
+# summary(cor_5_9)
+cor_5_9 <- as.data.frame(summary(cor_5_9)$rescor_pars)
+cor_5_9 <- paste(myround(cor_5_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_7 <- brm(bf(mvbind(rftrialcs, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_7, file = "models/cor_6_7_1a.rda")
+load("models/cor_6_7_1a.rda")
+# summary(cor_6_7)
+cor_6_7 <- as.data.frame(summary(cor_6_7)$rescor_pars)
+cor_6_7 <- paste(myround(cor_6_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_8 <- brm(bf(mvbind(rftrialcs, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_8, file = "models/cor_6_8_1a.rda")
+load("models/cor_6_8_1a.rda")
+# summary(cor_6_8)
+cor_6_8 <- as.data.frame(summary(cor_6_8)$rescor_pars)
+cor_6_8 <- paste(myround(cor_6_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_9 <- brm(bf(mvbind(rftrialcs, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_9, file = "models/cor_6_9_1a.rda")
+load("models/cor_6_9_1a.rda")
+# summary(cor_6_9)
+cor_6_9 <- as.data.frame(summary(cor_6_9)$rescor_pars)
+cor_6_9 <- paste(myround(cor_6_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_7_8 <- brm(bf(mvbind(rfleft.e, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_7_8, file = "models/cor_7_8_1a.rda")
+load("models/cor_7_8_1a.rda")
+# summary(cor_7_8)
+cor_7_8 <- as.data.frame(summary(cor_7_8)$rescor_pars)
+cor_7_8 <- paste(myround(cor_7_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_7_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_7_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_7_9 <- brm(bf(mvbind(rfleft.e, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_7_9, file = "models/cor_7_9_1a.rda")
+load("models/cor_7_9_1a.rda")
+# summary(cor_7_9)
+cor_7_9 <- as.data.frame(summary(cor_7_9)$rescor_pars)
+cor_7_9 <- paste(myround(cor_7_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_7_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_7_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_8_9 <- brm(bf(mvbind(freq.s, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_8_9, file = "models/cor_8_9_1a.rda")
+load("models/cor_8_9_1a.rda")
+# summary(cor_8_9)
+cor_8_9 <- as.data.frame(summary(cor_8_9)$rescor_pars)
+cor_8_9 <- paste(myround(cor_8_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_8_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_8_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+tables3_cors <- data.frame("1" = c("1.00", cor_1_2, cor_1_3, cor_1_4, cor_1_5, cor_1_6, cor_1_7, cor_1_8, cor_1_9),
+                    "2" = c(" ", "1.00", cor_2_3, cor_2_4, cor_2_5, cor_2_6, cor_2_7, cor_2_8, cor_2_9),
+                    "3" = c(" ", " ", "1.00", cor_3_4, cor_3_5, cor_3_6, cor_3_7, cor_3_8, cor_3_9),
+                    "4" = c(" ", " ", " ", "1.00", cor_4_5, cor_4_6, cor_4_7, cor_4_8, cor_4_9),
+                    "5" = c(" ", " ", " ", " ", "1.00", cor_5_6, cor_5_7, cor_5_8, cor_5_9),
+                    "6" = c(" ", " ", " ", " ", " ", "1.00", cor_6_7, cor_6_8, cor_6_9),
+                    "7" = c(" ", " ", " ", " ", " ", " ", "1.00", cor_7_8, cor_7_9),
+                    "8" = c(" ", " ", " ", " ", " ", " ", " ", "1.00", cor_8_9))
+colnames(tables3_cors) <- c("1", "2", "3", "4", "5", "6", "7", "8")
+rownames(tables3_cors) <- c("1", "2", "3", "4", "5", "6", "7", "8", "9")
+
+tables3_desc$Variable <- linebreak(tables3_desc$Variable, align = "l")
+
+tables3_cors <- tables3_cors %>%
+  mutate_all(linebreak, align = "c")
+
+tables3 <- cbind(tables3_desc, tables3_cors)
+rm(tables3_desc, tables3_cors)
+
+tables3_print <- kable(tables3, "latex", booktabs = TRUE, align = 'rlcccccccccccc', escape = FALSE,
+                         linesep = "\\addlinespace", col.names = linebreak(names(tables3))) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 4, "Zero-Order Inter-Variable Correlations" = 8)) %>%
+  footnote(general = "RF = Regulatory Focus; Prom. = Promotion; Prev. = Prevention. Correlation coefficients were estimated using Bayesian methods; brackets contain 95\\\\% credible intervals.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE, escape = FALSE)
+```
+
+**Table S3**
+
+*Summary of Means, Standard Deviations, and Inter-Variable Correlations (Study 1A)*
+
+```{r tables3_print, include = TRUE, results = 'asis'}
+tables3_print
+```
+
+\newpage
+
+## Complete Multilevel Model Output and Visualizations of Posterior Distributions for Effects of Interest
+
+### Primary Analysis: Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions? (Original Activity List)
+
+``` {r s1a_rfcat}
+## PRIMARY ANALYSIS: CONDUCTED WITH ORIGINAL RF-SPECIFIC ACTIVITIES FOR STUDY 1A
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_1a <- brm(rfcat.d ~ stimrf.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), family = binomial, data = rftest_rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.95))
+# save(mlmrfcatb_1a, file = "models/mlmrfcatb_1a.rda")
+load("models/mlmrfcatb_1a.rda")
+# summary(mlmrfcatb_1a)
+
+tables4 <- broom::tidy(mlmrfcatb_1a)
+tables4 <- rename(tables4, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables4$Type <- NULL
+tables4$component <- NULL
+tables4$Estimate <- round(tables4$Estimate, digits = 2)
+tables4$Post.SD <- round(tables4$Post.SD, digits = 2)
+tables4$Lower <- round(tables4$Lower, digits = 2)
+tables4$Upper <- round(tables4$Upper, digits = 2)
+tables4 <- tables4[!(tables4$Effect == "cor__(Intercept).rftrialcs"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__(Intercept).freq.s"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__rftrialcs.freq.s"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__(Intercept).length.s"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__rftrialcs.length.s"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__freq.s.length.s"), ]
+tables4 <- tables4[!(tables4$Effect == "cor__(Intercept).promdom.effc"), ]
+tables4$Effect[tables4$Effect == "(Intercept)"] <- "Intercept"
+tables4$Effect[tables4$Effect == "stimrf.d"] <- "Hypothesized Activity RF (0 = Prev.; 1 = Prom.)"
+tables4$Effect[tables4$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables4$Effect[tables4$Effect == "rftrialcs"] <- "Trial"
+tables4$Effect[tables4$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables4$Effect[tables4$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables4$Effect[tables4$Effect == "length.s"] <- "Length"
+tables4$Effect[tables4$Effect == "sd__(Intercept)"] <- "Intercept"
+tables4$Effect[tables4$Effect == "sd__rftrialcs"] <- "Trial"
+tables4$Effect[tables4$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables4$Effect[tables4$Effect == "sd__length.s"] <- "Length"
+tables4$Effect[tables4$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables4[is.na(tables4)] <- ""
+tables4$group <- NULL
+
+tables4_print <- kable(tables4, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S4**
+
+*Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization (Study 1A; Original Activity List)*
+
+```{r tables4_print, include = TRUE, results = 'asis'}
+tables4_print
+```
+
+```{r tables4_fig}
+mlmrfcatb_1a_post <- posterior_samples(mlmrfcatb_1a)
+mlmrfcatb_1a_cis <- quantile(mlmrfcatb_1a_post$b_stimrf.d, probs = c(.025, .975))
+figs1 <- ggplot(mlmrfcatb_1a_post, aes(x = b_stimrf.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrfcatb_1a_post$b_stimrf.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrfcatb_1a_cis[1], xend=mlmrfcatb_1a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 4)) +
+  labs(x = "Slope of Hypothesized Activity Regulatory Focus", y = "Density")
+```
+
+**Figure S1**
+
+*Posterior Distribution of Effect of Hypothesized Activity Regulatory Focus on Activity Categorization (Study 1A; Original Activity List)*
+
+```{r figs1, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs1
+```
+
+\newpage
+
+### Secondary Analysis: Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations? (Original Activity List)
+
+``` {r s1a_rflogrt}
+## SECONDARY ANALYSIS: CONDUCTED WITH ORIGINAL RF-SPECIFIC ACTIVITIES FOR STUDY 1A
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant  (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_1a <- brm(rflogrt ~ rfornot.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), data = rftest, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_1a, file = "models/mlmrflogrtb_1a.rda")
+load("models/mlmrflogrtb_1a.rda")
+# summary(mlmrflogrtb_1a)
+
+tables5 <- broom::tidy(mlmrflogrtb_1a)
+tables5 <- rename(tables5, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables5$Type <- NULL
+tables5$component <- NULL
+tables5$Estimate <- round(tables5$Estimate, digits = 2)
+tables5$Post.SD <- round(tables5$Post.SD, digits = 2)
+tables5$Lower <- round(tables5$Lower, digits = 2)
+tables5$Upper <- round(tables5$Upper, digits = 2)
+tables5 <- tables5[!(tables5$Effect == "cor__(Intercept).rftrialcs"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__(Intercept).freq.s"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__rftrialcs.freq.s"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__(Intercept).length.s"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__rftrialcs.length.s"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__freq.s.length.s"), ]
+tables5 <- tables5[!(tables5$Effect == "cor__(Intercept).promdom.effc"), ]
+tables5 <- tables5[!(tables5$Effect == "sd__Observation"), ]
+tables5$Effect[tables5$Effect == "(Intercept)"] <- "Intercept"
+tables5$Effect[tables5$Effect == "rfornot.d"] <- "Hypothesized RF-Specific Activity (0 = No; 1 = Yes)"
+tables5$Effect[tables5$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables5$Effect[tables5$Effect == "rftrialcs"] <- "Trial"
+tables5$Effect[tables5$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables5$Effect[tables5$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables5$Effect[tables5$Effect == "length.s"] <- "Length"
+tables5$Effect[tables5$Effect == "sd__(Intercept)"] <- "Intercept"
+tables5$Effect[tables5$Effect == "sd__rftrialcs"] <- "Trial"
+tables5$Effect[tables5$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables5$Effect[tables5$Effect == "sd__length.s"] <- "Length"
+tables5$Effect[tables5$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables5[is.na(tables5)] <- ""
+tables5$group <- NULL
+
+tables5_print <- kable(tables5, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S5**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1A; Original Activity List)*
+
+```{r tables5_print, include = TRUE, results = 'asis'}
+tables5_print
+```
+
+```{r tables5_fig}
+mlmrflogrtb_1a_post <- posterior_samples(mlmrflogrtb_1a)
+mlmrflogrtb_1a_cis <- quantile(mlmrflogrtb_1a_post$b_rfornot.d, probs = c(.025, .975))
+figs2 <- ggplot(mlmrflogrtb_1a_post, aes(x = b_rfornot.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrflogrtb_1a_post$b_rfornot.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrflogrtb_1a_cis[1], xend=mlmrflogrtb_1a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.15, 0.05)) +
+  labs(x = "Slope of Hypothesized Association with Regulatory Focus", y = "Density")
+```
+
+**Figure S2**
+
+*Posterior Distribution of Effect of Hypothesized Association (vs. Lack Thereof) with Regulatory Focus on Log-Transformed Response Latency (Study 1A; Original Activity List)*
+
+```{r figs2, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs2
+```
+
+\newpage
+
+### Primary Analysis: Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions? (Refined Activity List)
+
+``` {r s1a1b_rfcat}
+## PRIMARY ANALYSIS: CONDUCTED WITH FINAL STIMULI SELECTED FOR SUBSEQUENT STUDIES
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_1a1b <- brm(rfcat.d ~ stimrf_1b.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), family = binomial, data = rftest_rmf_1a1b, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.95))
+# save(mlmrfcatb_1a1b, file = "models/mlmrfcatb_1a1b.rda")
+load("models/mlmrfcatb_1a1b.rda")
+# summary(mlmrfcatb_1a1b)
+
+tables6 <- broom::tidy(mlmrfcatb_1a1b)
+tables6 <- rename(tables6, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables6$Type <- NULL
+tables6$component <- NULL
+tables6$Estimate <- round(tables6$Estimate, digits = 2)
+tables6$Post.SD <- round(tables6$Post.SD, digits = 2)
+tables6$Lower <- round(tables6$Lower, digits = 2)
+tables6$Upper <- round(tables6$Upper, digits = 2)
+tables6 <- tables6[!(tables6$Effect == "cor__(Intercept).rftrialcs"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__(Intercept).freq.s"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__rftrialcs.freq.s"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__(Intercept).length.s"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__rftrialcs.length.s"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__freq.s.length.s"), ]
+tables6 <- tables6[!(tables6$Effect == "cor__(Intercept).promdom.effc"), ]
+tables6$Effect[tables6$Effect == "(Intercept)"] <- "Intercept"
+tables6$Effect[tables6$Effect == "stimrf_1b.d"] <- "Hypothesized Activity RF (0 = Prev.; 1 = Prom.)"
+tables6$Effect[tables6$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables6$Effect[tables6$Effect == "rftrialcs"] <- "Trial"
+tables6$Effect[tables6$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables6$Effect[tables6$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables6$Effect[tables6$Effect == "length.s"] <- "Length"
+tables6$Effect[tables6$Effect == "sd__(Intercept)"] <- "Intercept"
+tables6$Effect[tables6$Effect == "sd__rftrialcs"] <- "Trial"
+tables6$Effect[tables6$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables6$Effect[tables6$Effect == "sd__length.s"] <- "Length"
+tables6$Effect[tables6$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables6[is.na(tables6)] <- ""
+tables6$group <- NULL
+
+tables6_print <- kable(tables6, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S6**
+
+*Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization (Study 1A; Refined Activity List)*
+
+```{r tables6_print, include = TRUE, results = 'asis'}
+tables6_print
+```
+
+```{r tables6_fig}
+mlmrfcatb_1a1b_post <- posterior_samples(mlmrfcatb_1a1b)
+mlmrfcatb_1a1b_cis <- quantile(mlmrfcatb_1a1b_post$b_stimrf_1b.d, probs = c(.025, .975))
+figs3 <- ggplot(mlmrfcatb_1a1b_post, aes(x = b_stimrf_1b.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrfcatb_1a1b_post$b_stimrf_1b.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrfcatb_1a1b_cis[1], xend=mlmrfcatb_1a1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 4.25)) +
+  labs(x = "Slope of Hypothesized Activity Regulatory Focus", y = "Density")
+```
+
+**Figure S3**
+
+*Posterior Distribution of Effect of Hypothesized Activity Regulatory Focus on Activity Categorization (Study 1A; Refined Activity List)*
+
+```{r figs3, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs3
+```
+
+\newpage
+
+### Secondary Analysis: Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations? (Refined Activity List)
+
+``` {r s1a1b_rflogrt}
+## SECONDARY ANALYSIS: CONDUCTED WITH FINAL STIMULI SELECTED FOR SUBSEQUENT STUDIES
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant  (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_1a1b <- brm(rflogrt ~ rfornot_1b.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), data = rftest_1a1b, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_1a1b, file = "models/mlmrflogrtb_1a1b.rda")
+load("models/mlmrflogrtb_1a1b.rda")
+# summary(mlmrflogrtb_1a1b)
+
+tables7 <- broom::tidy(mlmrflogrtb_1a1b)
+tables7 <- rename(tables7, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables7$Type <- NULL
+tables7$component <- NULL
+tables7$Estimate <- round(tables7$Estimate, digits = 2)
+tables7$Post.SD <- round(tables7$Post.SD, digits = 2)
+tables7$Lower <- round(tables7$Lower, digits = 2)
+tables7$Upper <- round(tables7$Upper, digits = 2)
+tables7 <- tables7[!(tables7$Effect == "cor__(Intercept).rftrialcs"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__(Intercept).freq.s"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__rftrialcs.freq.s"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__(Intercept).length.s"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__rftrialcs.length.s"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__freq.s.length.s"), ]
+tables7 <- tables7[!(tables7$Effect == "cor__(Intercept).promdom.effc"), ]
+tables7 <- tables7[!(tables7$Effect == "sd__Observation"), ]
+tables7$Effect[tables7$Effect == "(Intercept)"] <- "Intercept"
+tables7$Effect[tables7$Effect == "rfornot_1b.d"] <- "Hypothesized RF-Specific Activity (0 = No; 1 = Yes)"
+tables7$Effect[tables7$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables7$Effect[tables7$Effect == "rftrialcs"] <- "Trial"
+tables7$Effect[tables7$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables7$Effect[tables7$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables7$Effect[tables7$Effect == "length.s"] <- "Length"
+tables7$Effect[tables7$Effect == "sd__(Intercept)"] <- "Intercept"
+tables7$Effect[tables7$Effect == "sd__rftrialcs"] <- "Trial"
+tables7$Effect[tables7$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables7$Effect[tables7$Effect == "sd__length.s"] <- "Length"
+tables7$Effect[tables7$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables7[is.na(tables7)] <- ""
+tables7$group <- NULL
+
+tables7_print <- kable(tables7, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S7**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1A; Refined Activity List)*
+
+```{r tables7_print, include = TRUE, results = 'asis'}
+tables7_print
+```
+
+```{r tables7_fig}
+mlmrflogrtb_1a1b_post <- posterior_samples(mlmrflogrtb_1a1b)
+mlmrflogrtb_1a1b_cis <- quantile(mlmrflogrtb_1a1b_post$b_rfornot_1b.d, probs = c(.025, .975))
+figs4 <- ggplot(mlmrflogrtb_1a1b_post, aes(x = b_rfornot_1b.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrflogrtb_1a1b_post$b_rfornot_1b.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrflogrtb_1a1b_cis[1], xend=mlmrflogrtb_1a1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.225, 0.01)) +
+  labs(x = "Slope of Hypothesized Association with Regulatory Focus", y = "Density")
+```
+
+**Figure S4**
+
+*Posterior Distribution of Effect of Hypothesized Association (vs. Lack Thereof) with Regulatory Focus on Log-Transformed Response Latency (Study 1A; Original Activity List)*
+
+```{r figs4, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs4
+```
+
+\newpage
+
+# Study 1B
+
+## Activity List
+
+**Table S8**
+
+*Activity List (Study 1B)*
+
+```{r s1bactlist, include = TRUE, results = 'asis'}
+tables8 <- read.csv(file="data/RFgoalpursuit_study1b2b_actlist.csv", header = TRUE)
+tables8 %>%
+  kable("latex", booktabs = TRUE, align = 'ccc') %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  group_rows("Truth-Oriented Process Activities", 1, 2) %>%
+  group_rows("Control-Oriented Process Activities", 3, 4) %>%
+  group_rows("General Everyday Activities", 5, 5) %>%
+  group_rows("Practice Verbs (Outcome Attainment Activities)", 6, 6) %>%
+  row_spec(0, align = "c") %>%
+  footnote(general = "Activities in the prevention-truth, prevention-control, promotion-truth, and promotion-control categories were treated as regulatory focus-specific goal pursuit activities in our primary and secondary analyses.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+```{r s1b_load}
+load("data/RFgoalpursuit_study1b_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study1b2b_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s1b_subsets}
+rftest <- mf %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  mutate(rfornot = case_when(stimrf == "prom" | stimrf == "prev" ~ "rf", stimrf == "gen" ~ "gen"),
+         rfornot.d = case_when(stimrf == "prom" | stimrf == "prev" ~ 1, stimrf == "gen" ~ 0))
+
+rftest_rmf <- rftest %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth")
+```
+
+\newpage
+
+## Descriptive Statistics and Inter-Variable Correlations
+
+```{r s1b_desccors, include = TRUE, results = 'asis'}
+desc_nostd <- dplyr::select(rftest, rfcat.d, rflogrt, stimrf.d, rfornot.d, promdom.eff, rftrial, rfleft.e, freq, length)
+desc_nostd <- rename(desc_nostd, "Activity\nCategorization" = rfcat.d, "Log-\nTransformed\nResponse\nLatency" = rflogrt, "Hypothesized\nActivity RF" = stimrf.d, "Hypothesized\nRF-Specific\nActivity" = rfornot.d, "Prom. (vs.\nPrev.) Pride\nDominance" = promdom.eff, "Trial" = rftrial, "Order of\nCategory\nLabels" = rfleft.e, "Frequency\nof Use in\nEnglish\nLanguage" = freq, "Length " = length)
+means <- desc_nostd %>%
+  dplyr::summarize_all(funs(mean(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(Mean = V1)
+sds <- desc_nostd %>%
+  dplyr::summarize_all(funs(sd(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(SD = V1)
+tables9_desc <- cbind(means, sds)
+rm(desc_nostd, means, sds)
+tables9_desc$` ` <- 1:9
+tables9_desc$Variable <- rownames(tables9_desc)
+tables9_desc <- dplyr::select(tables9_desc, ` `, Variable, Mean, SD)
+rownames(tables9_desc) <- c("1", "2", "3", "4", "5", "6", "7", "8", "9")
+tables9_desc$Mean <- myround(tables9_desc$Mean, digits = 2)
+tables9_desc$SD <- myround(tables9_desc$SD, digits = 2)
+
+# 1. rfcat.d
+# 2. rflogrt
+# 3. stimrf.d
+# 4. rfornot.d
+# 5. promdom.effc
+# 6. rftrialcs
+# 7. rfleft.e
+# 8. freq.s
+# 9. length.s
+
+# cor_1_2 <- brm(bf(mvbind(rfcat.d, rflogrt) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_2, file = "models/cor_1_2_1b.rda")
+load("models/cor_1_2_1b.rda")
+# summary(cor_1_2)
+cor_1_2 <- as.data.frame(summary(cor_1_2)$rescor_pars)
+cor_1_2 <- paste(myround(cor_1_2[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_2[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_2[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_3 <- brm(bf(mvbind(rfcat.d, stimrf.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_3, file = "models/cor_1_3_1b.rda")
+load("models/cor_1_3_1b.rda")
+# summary(cor_1_3)
+cor_1_3 <- as.data.frame(summary(cor_1_3)$rescor_pars)
+cor_1_3 <- paste(myround(cor_1_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_4 <- brm(bf(mvbind(rfcat.d, rfornot.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_4, file = "models/cor_1_4_1b.rda")
+load("models/cor_1_4_1b.rda")
+# summary(cor_1_4)
+cor_1_4 <- as.data.frame(summary(cor_1_4)$rescor_pars)
+cor_1_4 <- paste(myround(cor_1_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_5 <- brm(bf(mvbind(rfcat.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_5, file = "models/cor_1_5_1b.rda")
+load("models/cor_1_5_1b.rda")
+# summary(cor_1_5)
+cor_1_5 <- as.data.frame(summary(cor_1_5)$rescor_pars)
+cor_1_5 <- paste(myround(cor_1_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_6 <- brm(bf(mvbind(rfcat.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_6, file = "models/cor_1_6_1b.rda")
+load("models/cor_1_6_1b.rda")
+# summary(cor_1_6)
+cor_1_6 <- as.data.frame(summary(cor_1_6)$rescor_pars)
+cor_1_6 <- paste(myround(cor_1_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_7 <- brm(bf(mvbind(rfcat.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_7, file = "models/cor_1_7_1b.rda")
+load("models/cor_1_7_1b.rda")
+# summary(cor_1_7)
+cor_1_7 <- as.data.frame(summary(cor_1_7)$rescor_pars)
+cor_1_7 <- paste(myround(cor_1_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_8 <- brm(bf(mvbind(rfcat.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_8, file = "models/cor_1_8_1b.rda")
+load("models/cor_1_8_1b.rda")
+# summary(cor_1_8)
+cor_1_8 <- as.data.frame(summary(cor_1_8)$rescor_pars)
+cor_1_8 <- paste(myround(cor_1_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_9 <- brm(bf(mvbind(rfcat.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_9, file = "models/cor_1_9_1b.rda")
+load("models/cor_1_9_1b.rda")
+# summary(cor_1_9)
+cor_1_9 <- as.data.frame(summary(cor_1_9)$rescor_pars)
+cor_1_9 <- paste(myround(cor_1_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_3 <- brm(bf(mvbind(rflogrt, stimrf.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_3, file = "models/cor_2_3_1b.rda")
+load("models/cor_2_3_1b.rda")
+# summary(cor_2_3)
+cor_2_3 <- as.data.frame(summary(cor_2_3)$rescor_pars)
+cor_2_3 <- paste(myround(cor_2_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_4 <- brm(bf(mvbind(rflogrt, rfornot.d) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_4, file = "models/cor_2_4_1b.rda")
+load("models/cor_2_4_1b.rda")
+# summary(cor_2_4)
+cor_2_4 <- as.data.frame(summary(cor_2_4)$rescor_pars)
+cor_2_4 <- paste(myround(cor_2_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_5 <- brm(bf(mvbind(rflogrt, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_5, file = "models/cor_2_5_1b.rda")
+load("models/cor_2_5_1b.rda")
+# summary(cor_2_5)
+cor_2_5 <- as.data.frame(summary(cor_2_5)$rescor_pars)
+cor_2_5 <- paste(myround(cor_2_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_6 <- brm(bf(mvbind(rflogrt, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_6, file = "models/cor_2_6_1b.rda")
+load("models/cor_2_6_1b.rda")
+# summary(cor_2_6)
+cor_2_6 <- as.data.frame(summary(cor_2_6)$rescor_pars)
+cor_2_6 <- paste(myround(cor_2_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_7 <- brm(bf(mvbind(rflogrt, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_7, file = "models/cor_2_7_1b.rda")
+load("models/cor_2_7_1b.rda")
+# summary(cor_2_7)
+cor_2_7 <- as.data.frame(summary(cor_2_7)$rescor_pars)
+cor_2_7 <- paste(myround(cor_2_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_8 <- brm(bf(mvbind(rflogrt, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_8, file = "models/cor_2_8_1b.rda")
+load("models/cor_2_8_1b.rda")
+# summary(cor_2_8)
+cor_2_8 <- as.data.frame(summary(cor_2_8)$rescor_pars)
+cor_2_8 <- paste(myround(cor_2_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_9 <- brm(bf(mvbind(rflogrt, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_9, file = "models/cor_2_9_1b.rda")
+load("models/cor_2_9_1b.rda")
+# summary(cor_2_9)
+cor_2_9 <- as.data.frame(summary(cor_2_9)$rescor_pars)
+cor_2_9 <- paste(myround(cor_2_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+cor_3_4 <- "—"
+
+# cor_3_5 <- brm(bf(mvbind(stimrf.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_5, file = "models/cor_3_5_1b.rda")
+load("models/cor_3_5_1b.rda")
+# summary(cor_3_5)
+cor_3_5 <- as.data.frame(summary(cor_3_5)$rescor_pars)
+cor_3_5 <- paste(myround(cor_3_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_6 <- brm(bf(mvbind(stimrf.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_6, file = "models/cor_3_6_1b.rda")
+load("models/cor_3_6_1b.rda")
+# summary(cor_3_6)
+cor_3_6 <- as.data.frame(summary(cor_3_6)$rescor_pars)
+cor_3_6 <- paste(myround(cor_3_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_7 <- brm(bf(mvbind(stimrf.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_7, file = "models/cor_3_7_1b.rda")
+load("models/cor_3_7_1b.rda")
+# summary(cor_3_7)
+cor_3_7 <- as.data.frame(summary(cor_3_7)$rescor_pars)
+cor_3_7 <- paste(myround(cor_3_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_8 <- brm(bf(mvbind(stimrf.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_8, file = "models/cor_3_8_1b.rda")
+load("models/cor_3_8_1b.rda")
+# summary(cor_3_8)
+cor_3_8 <- as.data.frame(summary(cor_3_8)$rescor_pars)
+cor_3_8 <- paste(myround(cor_3_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_9 <- brm(bf(mvbind(stimrf.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_9, file = "models/cor_3_9_1b.rda")
+load("models/cor_3_9_1b.rda")
+# summary(cor_3_9)
+cor_3_9 <- as.data.frame(summary(cor_3_9)$rescor_pars)
+cor_3_9 <- paste(myround(cor_3_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_5 <- brm(bf(mvbind(rfornot.d, promdom.effc) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_5, file = "models/cor_4_5_1b.rda")
+load("models/cor_4_5_1b.rda")
+# summary(cor_4_5)
+cor_4_5 <- as.data.frame(summary(cor_4_5)$rescor_pars)
+cor_4_5 <- paste(myround(cor_4_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_6 <- brm(bf(mvbind(rfornot.d, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_6, file = "models/cor_4_6_1b.rda")
+load("models/cor_4_6_1b.rda")
+# summary(cor_4_6)
+cor_4_6 <- as.data.frame(summary(cor_4_6)$rescor_pars)
+cor_4_6 <- paste(myround(cor_4_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_7 <- brm(bf(mvbind(rfornot.d, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_7, file = "models/cor_4_7_1b.rda")
+load("models/cor_4_7_1b.rda")
+# summary(cor_4_7)
+cor_4_7 <- as.data.frame(summary(cor_4_7)$rescor_pars)
+cor_4_7 <- paste(myround(cor_4_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_8 <- brm(bf(mvbind(rfornot.d, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_8, file = "models/cor_4_8_1b.rda")
+load("models/cor_4_8_1b.rda")
+# summary(cor_4_8)
+cor_4_8 <- as.data.frame(summary(cor_4_8)$rescor_pars)
+cor_4_8 <- paste(myround(cor_4_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_9 <- brm(bf(mvbind(rfornot.d, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_9, file = "models/cor_4_9_1b.rda")
+load("models/cor_4_9_1b.rda")
+# summary(cor_4_9)
+cor_4_9 <- as.data.frame(summary(cor_4_9)$rescor_pars)
+cor_4_9 <- paste(myround(cor_4_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_6 <- brm(bf(mvbind(promdom.effc, rftrialcs) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_6, file = "models/cor_5_6_1b.rda")
+load("models/cor_5_6_1b.rda")
+# summary(cor_5_6)
+cor_5_6 <- as.data.frame(summary(cor_5_6)$rescor_pars)
+cor_5_6 <- paste(myround(cor_5_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_7 <- brm(bf(mvbind(promdom.effc, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_7, file = "models/cor_5_7_1b.rda")
+load("models/cor_5_7_1b.rda")
+# summary(cor_5_7)
+cor_5_7 <- as.data.frame(summary(cor_5_7)$rescor_pars)
+cor_5_7 <- paste(myround(cor_5_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_8 <- brm(bf(mvbind(promdom.effc, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_8, file = "models/cor_5_8_1b.rda")
+load("models/cor_5_8_1b.rda")
+# summary(cor_5_8)
+cor_5_8 <- as.data.frame(summary(cor_5_8)$rescor_pars)
+cor_5_8 <- paste(myround(cor_5_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_9 <- brm(bf(mvbind(promdom.effc, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_9, file = "models/cor_5_9_1b.rda")
+load("models/cor_5_9_1b.rda")
+# summary(cor_5_9)
+cor_5_9 <- as.data.frame(summary(cor_5_9)$rescor_pars)
+cor_5_9 <- paste(myround(cor_5_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_7 <- brm(bf(mvbind(rftrialcs, rfleft.e) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_7, file = "models/cor_6_7_1b.rda")
+load("models/cor_6_7_1b.rda")
+# summary(cor_6_7)
+cor_6_7 <- as.data.frame(summary(cor_6_7)$rescor_pars)
+cor_6_7 <- paste(myround(cor_6_7[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_7[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_7[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_8 <- brm(bf(mvbind(rftrialcs, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_8, file = "models/cor_6_8_1b.rda")
+load("models/cor_6_8_1b.rda")
+# summary(cor_6_8)
+cor_6_8 <- as.data.frame(summary(cor_6_8)$rescor_pars)
+cor_6_8 <- paste(myround(cor_6_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_6_9 <- brm(bf(mvbind(rftrialcs, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_6_9, file = "models/cor_6_9_1b.rda")
+load("models/cor_6_9_1b.rda")
+# summary(cor_6_9)
+cor_6_9 <- as.data.frame(summary(cor_6_9)$rescor_pars)
+cor_6_9 <- paste(myround(cor_6_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_6_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_6_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_7_8 <- brm(bf(mvbind(rfleft.e, freq.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_7_8, file = "models/cor_7_8_1b.rda")
+load("models/cor_7_8_1b.rda")
+# summary(cor_7_8)
+cor_7_8 <- as.data.frame(summary(cor_7_8)$rescor_pars)
+cor_7_8 <- paste(myround(cor_7_8[1, "Estimate"], digits = 2), "\n{[}", myround(cor_7_8[1, "l-95% CI"], digits = 2), ", ", myround(cor_7_8[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_7_9 <- brm(bf(mvbind(rfleft.e, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_7_9, file = "models/cor_7_9_1b.rda")
+load("models/cor_7_9_1b.rda")
+# summary(cor_7_9)
+cor_7_9 <- as.data.frame(summary(cor_7_9)$rescor_pars)
+cor_7_9 <- paste(myround(cor_7_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_7_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_7_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_8_9 <- brm(bf(mvbind(freq.s, length.s) ~ 1) + set_rescor(TRUE), data = rftest, chains = 4, cores = 4, seed = 1234)
+# save(cor_8_9, file = "models/cor_8_9_1b.rda")
+load("models/cor_8_9_1b.rda")
+# summary(cor_8_9)
+cor_8_9 <- as.data.frame(summary(cor_8_9)$rescor_pars)
+cor_8_9 <- paste(myround(cor_8_9[1, "Estimate"], digits = 2), "\n{[}", myround(cor_8_9[1, "l-95% CI"], digits = 2), ", ", myround(cor_8_9[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+tables9_cors <- data.frame("1" = c("1.00", cor_1_2, cor_1_3, cor_1_4, cor_1_5, cor_1_6, cor_1_7, cor_1_8, cor_1_9),
+                    "2" = c(" ", "1.00", cor_2_3, cor_2_4, cor_2_5, cor_2_6, cor_2_7, cor_2_8, cor_2_9),
+                    "3" = c(" ", " ", "1.00", cor_3_4, cor_3_5, cor_3_6, cor_3_7, cor_3_8, cor_3_9),
+                    "4" = c(" ", " ", " ", "1.00", cor_4_5, cor_4_6, cor_4_7, cor_4_8, cor_4_9),
+                    "5" = c(" ", " ", " ", " ", "1.00", cor_5_6, cor_5_7, cor_5_8, cor_5_9),
+                    "6" = c(" ", " ", " ", " ", " ", "1.00", cor_6_7, cor_6_8, cor_6_9),
+                    "7" = c(" ", " ", " ", " ", " ", " ", "1.00", cor_7_8, cor_7_9),
+                    "8" = c(" ", " ", " ", " ", " ", " ", " ", "1.00", cor_8_9))
+colnames(tables9_cors) <- c("1", "2", "3", "4", "5", "6", "7", "8")
+rownames(tables9_cors) <- c("1", "2", "3", "4", "5", "6", "7", "8", "9")
+
+tables9_desc$Variable <- linebreak(tables9_desc$Variable, align = "l")
+
+tables9_cors <- tables9_cors %>%
+  mutate_all(linebreak, align = "c")
+
+tables9 <- cbind(tables9_desc, tables9_cors)
+rm(tables9_desc, tables9_cors)
+
+tables9_print <- kable(tables9, "latex", booktabs = TRUE, align = 'rlcccccccccccc', escape = FALSE,
+                         linesep = "\\addlinespace", col.names = linebreak(names(tables9))) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 4, "Zero-Order Inter-Variable Correlations" = 8)) %>%
+  footnote(general = "RF = Regulatory Focus; Prom. = Promotion; Prev. = Prevention. Correlation coefficients were estimated using Bayesian methods; brackets contain 95\\\\% credible intervals.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE, escape = FALSE)
+```
+
+**Table S9**
+
+*Summary of Means, Standard Deviations, and Inter-Variable Correlations (Study 1B)*
+
+```{r tables9_print, include = TRUE, results = 'asis'}
+tables9_print
+```
+
+\newpage
+
+## Complete Multilevel Model Output and Visualizations of Posterior Distributions for Effects of Interest
+
+### Primary Analysis: Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions?
+
+``` {r s1b_rfcat}
+## PRIMARY ANALYSIS
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_1b <- brm(rfcat.d ~ stimrf.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), family = binomial, data = rftest_rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrfcatb_1b, file = "models/mlmrfcatb_1b.rda")
+load("models/mlmrfcatb_1b.rda")
+# summary(mlmrfcatb_1b)
+
+tables10 <- broom::tidy(mlmrfcatb_1b)
+tables10 <- rename(tables10, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables10$Type <- NULL
+tables10$component <- NULL
+tables10$Estimate <- round(tables10$Estimate, digits = 2)
+tables10$Post.SD <- round(tables10$Post.SD, digits = 2)
+tables10$Lower <- round(tables10$Lower, digits = 2)
+tables10$Upper <- round(tables10$Upper, digits = 2)
+tables10 <- tables10[!(tables10$Effect == "cor__(Intercept).rftrialcs"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__(Intercept).freq.s"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__rftrialcs.freq.s"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__(Intercept).length.s"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__rftrialcs.length.s"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__freq.s.length.s"), ]
+tables10 <- tables10[!(tables10$Effect == "cor__(Intercept).promdom.effc"), ]
+tables10$Effect[tables10$Effect == "(Intercept)"] <- "Intercept"
+tables10$Effect[tables10$Effect == "stimrf.d"] <- "Hypothesized Activity RF (0 = Prev.; 1 = Prom.)"
+tables10$Effect[tables10$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables10$Effect[tables10$Effect == "rftrialcs"] <- "Trial"
+tables10$Effect[tables10$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables10$Effect[tables10$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables10$Effect[tables10$Effect == "length.s"] <- "Length"
+tables10$Effect[tables10$Effect == "sd__(Intercept)"] <- "Intercept"
+tables10$Effect[tables10$Effect == "sd__rftrialcs"] <- "Trial"
+tables10$Effect[tables10$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables10$Effect[tables10$Effect == "sd__length.s"] <- "Length"
+tables10$Effect[tables10$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables10[is.na(tables10)] <- ""
+tables10$group <- NULL
+
+tables10_print <- kable(tables10, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S10**
+
+*Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization (Study 1B)*
+
+```{r tables10_print, include = TRUE, results = 'asis'}
+tables10_print
+```
+
+```{r tables10_fig}
+mlmrfcatb_1b_post <- posterior_samples(mlmrfcatb_1b)
+mlmrfcatb_1b_cis <- quantile(mlmrfcatb_1b_post$b_stimrf.d, probs = c(.025, .975))
+figs5 <- ggplot(mlmrfcatb_1b_post, aes(x = b_stimrf.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrfcatb_1b_post$b_stimrf.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrfcatb_1b_cis[1], xend=mlmrfcatb_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Hypothesized Activity Regulatory Focus", y = "Density")
+```
+
+**Figure S5**
+
+*Posterior Distribution of Effect of Hypothesized Activity Regulatory Focus on Activity Categorization (Study 1B)*
+
+```{r figs5, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs5
+```
+
+\newpage
+
+### Secondary Analysis: Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations?
+
+``` {r s1b_rflogrt}
+## SECONDARY ANALYSIS
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_1b <- brm(rflogrt ~ rfornot.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), data = rftest, cores = 4, chains = 4, iter = 4000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_1b, file = "models/mlmrflogrtb_1b.rda")
+load("models/mlmrflogrtb_1b.rda")
+# summary(mlmrflogrtb_1b)
+
+tables11 <- broom::tidy(mlmrflogrtb_1b)
+tables11 <- rename(tables11, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables11$Type <- NULL
+tables11$component <- NULL
+tables11$Estimate <- round(tables11$Estimate, digits = 2)
+tables11$Post.SD <- round(tables11$Post.SD, digits = 2)
+tables11$Lower <- round(tables11$Lower, digits = 2)
+tables11$Upper <- round(tables11$Upper, digits = 2)
+tables11 <- tables11[!(tables11$Effect == "cor__(Intercept).rftrialcs"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__(Intercept).freq.s"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__rftrialcs.freq.s"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__(Intercept).length.s"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__rftrialcs.length.s"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__freq.s.length.s"), ]
+tables11 <- tables11[!(tables11$Effect == "cor__(Intercept).promdom.effc"), ]
+tables11 <- tables11[!(tables11$Effect == "sd__Observation"), ]
+tables11$Effect[tables11$Effect == "(Intercept)"] <- "Intercept"
+tables11$Effect[tables11$Effect == "rfornot.d"] <- "Hypothesized RF-Specific Activity (0 = No; 1 = Yes)"
+tables11$Effect[tables11$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables11$Effect[tables11$Effect == "rftrialcs"] <- "Trial"
+tables11$Effect[tables11$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables11$Effect[tables11$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables11$Effect[tables11$Effect == "length.s"] <- "Length"
+tables11$Effect[tables11$Effect == "sd__(Intercept)"] <- "Intercept"
+tables11$Effect[tables11$Effect == "sd__rftrialcs"] <- "Trial"
+tables11$Effect[tables11$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables11$Effect[tables11$Effect == "sd__length.s"] <- "Length"
+tables11$Effect[tables11$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables11[is.na(tables11)] <- ""
+tables11$group <- NULL
+
+tables11_print <- kable(tables11, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S11**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1B)*
+
+```{r tables11_print, include = TRUE, results = 'asis'}
+tables11_print
+```
+
+```{r tables11_fig}
+mlmrflogrtb_1b_post <- posterior_samples(mlmrflogrtb_1b)
+mlmrflogrtb_1b_cis <- quantile(mlmrflogrtb_1b_post$b_rfornot.d, probs = c(.025, .975))
+figs6 <- ggplot(mlmrflogrtb_1b_post, aes(x = b_rfornot.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrflogrtb_1b_post$b_rfornot.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrflogrtb_1b_cis[1], xend=mlmrflogrtb_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.55, 0.05)) +
+  labs(x = "Slope of Hypothesized Association with Regulatory Focus", y = "Density")
+```
+
+**Figure S6**
+
+*Posterior Distribution of Effect of Hypothesized Association (vs. Lack Thereof) with Regulatory Focus on Log-Transformed Response Latency (Study 1B)*
+
+```{r figs6, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs6
+```
+
+\newpage
+
+## Exploratory Analyses with Regulatory Focus Strength (Rather than Regulatory Focus Pride) as a Covariate
+
+### Exploratory Analysis: When Including for Promotion (vs. Prevention) Strength (Rather than Promotion vs. Prevention Pride) as a Covariate, Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions?
+
+``` {r s1b_rfcat_promdom.strc}
+## PRIMARY ANALYSIS: CONTROLLING FOR PROM (VS. PREV) STRENGTH DOMINANCE INSTEAD OF PROM (VS. PREV) PRIDE DOMINANCE
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_str_1b <- brm(rfcat.d ~ stimrf.d + promdom.strc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.strc | stim), family = binomial, data = rftest_rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrfcatb_str_1b, file = "models/mlmrfcatb_str_1b.rda")
+load("models/mlmrfcatb_str_1b.rda")
+# summary(mlmrfcatb_str_1b)
+
+tables12 <- broom::tidy(mlmrfcatb_str_1b)
+tables12 <- rename(tables12, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables12$Type <- NULL
+tables12$component <- NULL
+tables12$Estimate <- round(tables12$Estimate, digits = 2)
+tables12$Post.SD <- round(tables12$Post.SD, digits = 2)
+tables12$Lower <- round(tables12$Lower, digits = 2)
+tables12$Upper <- round(tables12$Upper, digits = 2)
+tables12 <- tables12[!(tables12$Effect == "cor__(Intercept).rftrialcs"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__(Intercept).freq.s"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__rftrialcs.freq.s"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__(Intercept).length.s"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__rftrialcs.length.s"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__freq.s.length.s"), ]
+tables12 <- tables12[!(tables12$Effect == "cor__(Intercept).promdom.strc"), ]
+tables12$Effect[tables12$Effect == "(Intercept)"] <- "Intercept"
+tables12$Effect[tables12$Effect == "stimrf.d"] <- "Hypothesized Activity RF (0 = Prev.; 1 = Prom.)"
+tables12$Effect[tables12$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables12$Effect[tables12$Effect == "rftrialcs"] <- "Trial"
+tables12$Effect[tables12$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables12$Effect[tables12$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables12$Effect[tables12$Effect == "length.s"] <- "Length"
+tables12$Effect[tables12$Effect == "sd__(Intercept)"] <- "Intercept"
+tables12$Effect[tables12$Effect == "sd__rftrialcs"] <- "Trial"
+tables12$Effect[tables12$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables12$Effect[tables12$Effect == "sd__length.s"] <- "Length"
+tables12$Effect[tables12$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables12[is.na(tables12)] <- ""
+tables12$group <- NULL
+
+tables12_print <- kable(tables12, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S12**
+
+*Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization (Study 1B; Promotion vs. Prevention Strength Included as Covariate)*
+
+```{r tables12_print, include = TRUE, results = 'asis'}
+tables12_print
+```
+
+```{r tables12_fig}
+mlmrfcatb_str_1b_post <- posterior_samples(mlmrfcatb_str_1b)
+mlmrfcatb_str_1b_cis <- quantile(mlmrfcatb_str_1b_post$b_stimrf.d, probs = c(.025, .975))
+figs7 <- ggplot(mlmrfcatb_str_1b_post, aes(x = b_stimrf.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrfcatb_str_1b_post$b_stimrf.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrfcatb_str_1b_cis[1], xend=mlmrfcatb_str_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 4.25)) +
+  labs(x = "Slope of Hypothesized Activity Regulatory Focus", y = "Density")
+```
+
+**Figure S7**
+
+*Posterior Distribution of Effect of Hypothesized Activity Regulatory Focus on Activity Categorization (Study 1B; Promotion vs. Prevention Strength Included as Covariate)*
+
+```{r figs7, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs7
+```
+
+\newpage
+
+### Exploratory Analysis: When Including for Promotion (vs. Prevention) Strength (Rather than Promotion vs. Prevention Pride) as a Covariate, Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations?
+
+``` {r s1b_rflogrt_promdom.strc}
+## SECONDARY ANALYSIS: CONTROLLING FOR PROM (VS. PREV) STRENGTH DOMINANCE INSTEAD OF PROM (VS. PREV) PRIDE DOMINANCE
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_str_1b <- brm(rflogrt ~ rfornot.d + promdom.strc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.strc | stim), data = rftest, cores = 4, chains = 4, iter = 4000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_str_1b, file = "models/mlmrflogrtb_str_1b.rda")
+load("models/mlmrflogrtb_str_1b.rda")
+# summary(mlmrflogrtb_str_1b)
+
+tables13 <- broom::tidy(mlmrflogrtb_str_1b)
+tables13 <- rename(tables13, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables13$Type <- NULL
+tables13$component <- NULL
+tables13$Estimate <- round(tables13$Estimate, digits = 2)
+tables13$Post.SD <- round(tables13$Post.SD, digits = 2)
+tables13$Lower <- round(tables13$Lower, digits = 2)
+tables13$Upper <- round(tables13$Upper, digits = 2)
+tables13 <- tables13[!(tables13$Effect == "cor__(Intercept).rftrialcs"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__(Intercept).freq.s"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__rftrialcs.freq.s"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__(Intercept).length.s"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__rftrialcs.length.s"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__freq.s.length.s"), ]
+tables13 <- tables13[!(tables13$Effect == "cor__(Intercept).promdom.strc"), ]
+tables13 <- tables13[!(tables13$Effect == "sd__Observation"), ]
+tables13$Effect[tables13$Effect == "(Intercept)"] <- "Intercept"
+tables13$Effect[tables13$Effect == "rfornot.d"] <- "Hypothesized RF-Specific Activity (0 = No; 1 = Yes)"
+tables13$Effect[tables13$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables13$Effect[tables13$Effect == "rftrialcs"] <- "Trial"
+tables13$Effect[tables13$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables13$Effect[tables13$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables13$Effect[tables13$Effect == "length.s"] <- "Length"
+tables13$Effect[tables13$Effect == "sd__(Intercept)"] <- "Intercept"
+tables13$Effect[tables13$Effect == "sd__rftrialcs"] <- "Trial"
+tables13$Effect[tables13$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables13$Effect[tables13$Effect == "sd__length.s"] <- "Length"
+tables13$Effect[tables13$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables13[is.na(tables13)] <- ""
+tables13$group <- NULL
+
+tables13_print <- kable(tables13, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S13**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1B; Promotion vs. Prevention Strength Included as Covariate)*
+
+```{r tables13_print, include = TRUE, results = 'asis'}
+tables13_print
+```
+
+```{r tables13_fig}
+mlmrflogrtb_1b_post <- posterior_samples(mlmrflogrtb_1b)
+mlmrflogrtb_1b_cis <- quantile(mlmrflogrtb_1b_post$b_rfornot.d, probs = c(.025, .975))
+figs8 <- ggplot(mlmrflogrtb_1b_post, aes(x = b_rfornot.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrflogrtb_1b_post$b_rfornot.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrflogrtb_1b_cis[1], xend=mlmrflogrtb_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.55, 0.05)) +
+  labs(x = "Slope of Hypothesized Association with Regulatory Focus", y = "Density")
+```
+
+**Figure S8**
+
+*Posterior Distribution of Effect of Hypothesized Association (vs. Lack Thereof) with Regulatory Focus on Log-Transformed Response Latency (Study 1B; Promotion vs. Prevention Strength Included as Covariate)*
+
+```{r figs8, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs8
+```
+
+\newpage
+
+## Primary and Secondary Analyses Conducted Among Native English Speakers Only
+
+```{r s1b_subsets_eng}
+rftest_eng <- mf_eng %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  mutate(rfornot = case_when(stimrf == "prom" | stimrf == "prev" ~ "rf", stimrf == "gen" ~ "gen"),
+         rfornot.d = case_when(stimrf == "prom" | stimrf == "prev" ~ 1, stimrf == "gen" ~ 0))
+
+rftest_rmf_eng <- rftest_eng %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth")
+```
+
+### Primary Analysis: When Examining Responses from Native English Speakers Only, Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions?
+
+``` {r s1b_rfcat_eng}
+## PRIMARY ANALYSIS: NATIVE ENGLISH SPEAKERS ONLY
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_eng_1b <- brm(rfcat.d ~ stimrf.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), family = binomial, data = rftest_rmf_eng, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrfcatb_eng_1b, file = "models/mlmrfcatb_eng_1b.rda")
+load("models/mlmrfcatb_eng_1b.rda")
+# summary(mlmrfcatb_eng_1b)
+
+tables14 <- broom::tidy(mlmrfcatb_eng_1b)
+tables14 <- rename(tables14, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables14$Type <- NULL
+tables14$component <- NULL
+tables14$Estimate <- round(tables14$Estimate, digits = 2)
+tables14$Post.SD <- round(tables14$Post.SD, digits = 2)
+tables14$Lower <- round(tables14$Lower, digits = 2)
+tables14$Upper <- round(tables14$Upper, digits = 2)
+tables14 <- tables14[!(tables14$Effect == "cor__(Intercept).rftrialcs"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__(Intercept).freq.s"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__rftrialcs.freq.s"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__(Intercept).length.s"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__rftrialcs.length.s"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__freq.s.length.s"), ]
+tables14 <- tables14[!(tables14$Effect == "cor__(Intercept).promdom.effc"), ]
+tables14$Effect[tables14$Effect == "(Intercept)"] <- "Intercept"
+tables14$Effect[tables14$Effect == "stimrf.d"] <- "Hypothesized Activity RF (0 = Prev.; 1 = Prom.)"
+tables14$Effect[tables14$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables14$Effect[tables14$Effect == "rftrialcs"] <- "Trial"
+tables14$Effect[tables14$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables14$Effect[tables14$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables14$Effect[tables14$Effect == "length.s"] <- "Length"
+tables14$Effect[tables14$Effect == "sd__(Intercept)"] <- "Intercept"
+tables14$Effect[tables14$Effect == "sd__rftrialcs"] <- "Trial"
+tables14$Effect[tables14$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables14$Effect[tables14$Effect == "sd__length.s"] <- "Length"
+tables14$Effect[tables14$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables14[is.na(tables14)] <- ""
+tables14$group <- NULL
+
+tables14_print <- kable(tables14, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S14**
+
+*Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization (Study 1B; Native English Speakers Only)*
+
+```{r tables14_print, include = TRUE, results = 'asis'}
+tables14_print
+```
+
+```{r tables14_fig}
+mlmrfcatb_eng_1b_post <- posterior_samples(mlmrfcatb_eng_1b)
+mlmrfcatb_eng_1b_cis <- quantile(mlmrfcatb_eng_1b_post$b_stimrf.d, probs = c(.025, .975))
+figs9 <- ggplot(mlmrfcatb_eng_1b_post, aes(x = b_stimrf.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrfcatb_eng_1b_post$b_stimrf.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrfcatb_eng_1b_cis[1], xend=mlmrfcatb_eng_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.1, 12.75)) +
+  labs(x = "Slope of Hypothesized Activity Regulatory Focus", y = "Density")
+```
+
+**Figure S9**
+
+*Posterior Distribution of Effect of Hypothesized Activity Regulatory Focus on Activity Categorization (Study 1B; Native English Speakers Only)*
+
+```{r figs9, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs9
+```
+
+\newpage
+
+### Secondary Analysis: When Examining Responses from Native English Speakers Only, Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations?
+
+``` {r s1b_rflogrt_eng}
+## SECONDARY ANALYSIS: NATIVE ENGLISH SPEAKERS ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_eng_1b <- brm(rflogrt ~ rfornot.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), data = rftest_eng, cores = 4, chains = 4, iter = 4000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_eng_1b, file = "models/mlmrflogrtb_eng_1b.rda")
+load("models/mlmrflogrtb_eng_1b.rda")
+# summary(mlmrflogrtb_eng_1b)
+
+tables15 <- broom::tidy(mlmrflogrtb_eng_1b)
+tables15 <- rename(tables15, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables15$Type <- NULL
+tables15$component <- NULL
+tables15$Estimate <- round(tables15$Estimate, digits = 2)
+tables15$Post.SD <- round(tables15$Post.SD, digits = 2)
+tables15$Lower <- round(tables15$Lower, digits = 2)
+tables15$Upper <- round(tables15$Upper, digits = 2)
+tables15 <- tables15[!(tables15$Effect == "cor__(Intercept).rftrialcs"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__(Intercept).freq.s"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__rftrialcs.freq.s"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__(Intercept).length.s"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__rftrialcs.length.s"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__freq.s.length.s"), ]
+tables15 <- tables15[!(tables15$Effect == "cor__(Intercept).promdom.effc"), ]
+tables15 <- tables15[!(tables15$Effect == "sd__Observation"), ]
+tables15$Effect[tables15$Effect == "(Intercept)"] <- "Intercept"
+tables15$Effect[tables15$Effect == "rfornot.d"] <- "Hypothesized RF-Specific Activity (0 = No; 1 = Yes)"
+tables15$Effect[tables15$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables15$Effect[tables15$Effect == "rftrialcs"] <- "Trial"
+tables15$Effect[tables15$Effect == "rfleft.e"] <- "Order of Category Labels"
+tables15$Effect[tables15$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables15$Effect[tables15$Effect == "length.s"] <- "Length"
+tables15$Effect[tables15$Effect == "sd__(Intercept)"] <- "Intercept"
+tables15$Effect[tables15$Effect == "sd__rftrialcs"] <- "Trial"
+tables15$Effect[tables15$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables15$Effect[tables15$Effect == "sd__length.s"] <- "Length"
+tables15$Effect[tables15$Effect == "sd__promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+tables15[is.na(tables15)] <- ""
+tables15$group <- NULL
+
+tables15_print <- kable(tables15, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 11) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 12, 13) %>%
+  row_spec(2, bold = T)
+```
+
+**Table S15**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1B; Native English Speakers Only)*
+
+```{r tables15_print, include = TRUE, results = 'asis'}
+tables15_print
+```
+
+```{r tables15_fig}
+mlmrflogrtb_eng_1b_post <- posterior_samples(mlmrflogrtb_eng_1b)
+mlmrflogrtb_eng_1b_cis <- quantile(mlmrflogrtb_eng_1b_post$b_rfornot.d, probs = c(.025, .975))
+figs10 <- ggplot(mlmrflogrtb_eng_1b_post, aes(x = b_rfornot.d)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmrflogrtb_eng_1b_post$b_rfornot.d), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmrflogrtb_eng_1b_cis[1], xend=mlmrflogrtb_eng_1b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.6, 0.05)) +
+  labs(x = "Slope of Hypothesized Association with Regulatory Focus", y = "Density")
+```
+
+**Figure S10**
+
+*Posterior Distribution of Effect of Hypothesized Association (vs. Lack Thereof) with Regulatory Focus on Log-Transformed Response Latency (Study 1B; Native English Speakers Only)*
+
+```{r figs10, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs10
+```
+
+\newpage
+
+# Study 2A
+
+## Activity List
+
+**Table S16**
+
+*Activity List (Study 2A)*
+
+```{r s2aactlist, include = TRUE, results = 'asis'}
+tables16 <- read.csv(file="data/RFgoalpursuit_study2a_actlist.csv", header = TRUE)
+tables16 %>%
+  kable("latex", booktabs = TRUE, align = 'ccc') %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  group_rows("Truth-Oriented Process Activities", 1, 2) %>%
+  group_rows("Control-Oriented Process Activities", 3, 4) %>%
+  group_rows("General Everyday Activities", 5, 6) %>%
+  row_spec(0, align = "c") %>%
+  footnote(general = "Activities in the prevention-truth, prevention-control, promotion-truth, and promotion-control categories were treated as regulatory focus-specific goal pursuit activities in our primary and secondary analyses.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+```{r s2a_load}
+load("data/RFgoalpursuit_study2a_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study2a_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s2a_subsets}
+# Exclude participants who did not complete DV (i.e., remembered no activities from the framework) =from dataframes
+mfraw <- dplyr::filter(mfraw, memtotal_mot > 0) # n = 57
+mf <- dplyr::filter(mf, memtotal_mot > 0)
+
+# Exclude blank (i.e., unremembered) activities from mf dataframe
+mf <- dplyr::filter(mf, !is.na(logmemrank))
+
+# Subset mf dataframe to only include process activites
+mf.process <- dplyr::filter(mf, stimtype != "gen") # n = 293
+
+# Subset mf dataframe to only include activities from the framework
+mf.rmf <- dplyr::filter(mf, stimtype == "prevtruth" | stimtype == "prevcontrol" | stimtype == "promtruth" | stimtype == "promcontrol") # n = 254
+
+# Data for 24 stimuli of interest with first 13 remembered activities (mean # of remembered activities)
+mf.rmf.f13 <- mf.rmf %>%
+  filter(memrank >= -13)
+
+# Data for 24 stimuli of interest for participants who remembered at least one promotion word and one prevention word
+mf.rmf.memboth <- mf.rmf %>%
+  filter(!is.na(logmemrank_promdom))
+```
+
+\newpage
+
+## Descriptive Statistics and Inter-Variable Correlations
+
+```{r s2a_desccors, include = TRUE, results = 'asis'}
+desc_nostd <- dplyr::select(mf.rmf, logmemrank, stimrf.e, promdom.str, memtotal, freq, length)
+desc_nostd <- rename(desc_nostd, "Log-\nTransformed\nOutput\nRank" = logmemrank, "Hypothesized\nActivity RF" = stimrf.e, "Prom. (vs.\nPrev.) Strength\nDominance" = promdom.str, "Output\nTotal" = memtotal, "Frequency\nof Use in\nEnglish\nLanguage" = freq, "Length" = length)
+means <- desc_nostd %>%
+  dplyr::summarize_all(funs(mean(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(Mean = V1)
+sds <- desc_nostd %>%
+  dplyr::summarize_all(funs(sd(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(SD = V1)
+tables17_desc <- cbind(means, sds)
+rm(desc_nostd, means, sds)
+tables17_desc$` ` <- 1:6
+tables17_desc$Variable <- rownames(tables17_desc)
+tables17_desc <- dplyr::select(tables17_desc, ` `, Variable, Mean, SD)
+rownames(tables17_desc) <- c("1", "2", "3", "4", "5", "6")
+tables17_desc$Mean <- myround(tables17_desc$Mean, digits = 2)
+tables17_desc$SD <- myround(tables17_desc$SD, digits = 2)
+
+# 1. logmemrank
+# 2. stimrf.e
+# 3. promdom.strc
+# 4. memtotal.s
+# 5. freq.s
+# 6. length.s
+
+# cor_1_2 <- brm(bf(mvbind(logmemrank, stimrf.e) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_2, file = "models/cor_1_2_2a.rda")
+load("models/cor_1_2_2a.rda")
+# summary(cor_1_2)
+cor_1_2 <- as.data.frame(summary(cor_1_2)$rescor_pars)
+cor_1_2 <- paste(myround(cor_1_2[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_2[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_2[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_3 <- brm(bf(mvbind(logmemrank, promdom.strc) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_3, file = "models/cor_1_3_2a.rda")
+load("models/cor_1_3_2a.rda")
+# summary(cor_1_3)
+cor_1_3 <- as.data.frame(summary(cor_1_3)$rescor_pars)
+cor_1_3 <- paste(myround(cor_1_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_4 <- brm(bf(mvbind(logmemrank, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_4, file = "models/cor_1_4_2a.rda")
+load("models/cor_1_4_2a.rda")
+# summary(cor_1_4)
+cor_1_4 <- as.data.frame(summary(cor_1_4)$rescor_pars)
+cor_1_4 <- paste(myround(cor_1_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_5 <- brm(bf(mvbind(logmemrank, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_5, file = "models/cor_1_5_2a.rda")
+load("models/cor_1_5_2a.rda")
+# summary(cor_1_5)
+cor_1_5 <- as.data.frame(summary(cor_1_5)$rescor_pars)
+cor_1_5 <- paste(myround(cor_1_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_6 <- brm(bf(mvbind(logmemrank, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_6, file = "models/cor_1_6_2a.rda")
+load("models/cor_1_6_2a.rda")
+# summary(cor_1_6)
+cor_1_6 <- as.data.frame(summary(cor_1_6)$rescor_pars)
+cor_1_6 <- paste(myround(cor_1_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_3 <- brm(bf(mvbind(stimrf.e, promdom.strc) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_3, file = "models/cor_2_3_2a.rda")
+load("models/cor_2_3_2a.rda")
+# summary(cor_2_3)
+cor_2_3 <- as.data.frame(summary(cor_2_3)$rescor_pars)
+cor_2_3 <- paste(myround(cor_2_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_4 <- brm(bf(mvbind(stimrf.e, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_4, file = "models/cor_2_4_2a.rda")
+load("models/cor_2_4_2a.rda")
+# summary(cor_2_4)
+cor_2_4 <- as.data.frame(summary(cor_2_4)$rescor_pars)
+cor_2_4 <- paste(myround(cor_2_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_5 <- brm(bf(mvbind(stimrf.e, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_5, file = "models/cor_2_5_2a.rda")
+load("models/cor_2_5_2a.rda")
+# summary(cor_2_5)
+cor_2_5 <- as.data.frame(summary(cor_2_5)$rescor_pars)
+cor_2_5 <- paste(myround(cor_2_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_6 <- brm(bf(mvbind(stimrf.e, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_6, file = "models/cor_2_6_2a.rda")
+load("models/cor_2_6_2a.rda")
+# summary(cor_2_6)
+cor_2_6 <- as.data.frame(summary(cor_2_6)$rescor_pars)
+cor_2_6 <- paste(myround(cor_2_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_4 <- brm(bf(mvbind(promdom.strc, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_4, file = "models/cor_3_4_2a.rda")
+load("models/cor_3_4_2a.rda")
+# summary(cor_3_4)
+cor_3_4 <- as.data.frame(summary(cor_3_4)$rescor_pars)
+cor_3_4 <- paste(myround(cor_3_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_5 <- brm(bf(mvbind(promdom.strc, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_5, file = "models/cor_3_5_2a.rda")
+load("models/cor_3_5_2a.rda")
+# summary(cor_3_5)
+cor_3_5 <- as.data.frame(summary(cor_3_5)$rescor_pars)
+cor_3_5 <- paste(myround(cor_3_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_6 <- brm(bf(mvbind(promdom.strc, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_6, file = "models/cor_3_6_2a.rda")
+load("models/cor_3_6_2a.rda")
+# summary(cor_3_6)
+cor_3_6 <- as.data.frame(summary(cor_3_6)$rescor_pars)
+cor_3_6 <- paste(myround(cor_3_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_5 <- brm(bf(mvbind(memtotal.s, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_5, file = "models/cor_4_5_2a.rda")
+load("models/cor_4_5_2a.rda")
+# summary(cor_4_5)
+cor_4_5 <- as.data.frame(summary(cor_4_5)$rescor_pars)
+cor_4_5 <- paste(myround(cor_4_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_6 <- brm(bf(mvbind(memtotal.s, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_6, file = "models/cor_4_6_2a.rda")
+load("models/cor_4_6_2a.rda")
+# summary(cor_4_6)
+cor_4_6 <- as.data.frame(summary(cor_4_6)$rescor_pars)
+cor_4_6 <- paste(myround(cor_4_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_6 <- brm(bf(mvbind(freq.s, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_6, file = "models/cor_5_6_2a.rda")
+load("models/cor_5_6_2a.rda")
+# summary(cor_5_6)
+cor_5_6 <- as.data.frame(summary(cor_5_6)$rescor_pars)
+cor_5_6 <- paste(myround(cor_5_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+tables17_cors <- data.frame("1" = c("1.00", cor_1_2, cor_1_3, cor_1_4, cor_1_5, cor_1_6),
+                    "2" = c(" ", "1.00", cor_2_3, cor_2_4, cor_2_5, cor_2_6),
+                    "3" = c(" ", " ", "1.00", cor_3_4, cor_3_5, cor_3_6),
+                    "4" = c(" ", " ", " ", "1.00", cor_4_5, cor_4_6),
+                    "5" = c(" ", " ", " ", " ", "1.00", cor_5_6))
+colnames(tables17_cors) <- c("1", "2", "3", "4", "5")
+rownames(tables17_cors) <- c("1", "2", "3", "4", "5", "6")
+
+tables17_desc$Variable <- linebreak(tables17_desc$Variable, align = "l")
+
+tables17_cors <- tables17_cors %>%
+  mutate_all(linebreak, align = "c")
+
+tables17 <- cbind(tables17_desc, tables17_cors)
+rm(tables17_desc, tables17_cors)
+
+tables17_print <- kable(tables17, "latex", booktabs = TRUE, align = 'rlccccccc', escape = FALSE,
+                         linesep = "\\addlinespace", col.names = linebreak(names(tables17))) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 4, "Zero-Order Inter-Variable Correlations" = 5)) %>%
+  footnote(general = "RF = Regulatory Focus; Prom. = Promotion; Prev. = Prevention. Correlation coefficients were estimated using Bayesian methods; brackets contain 95\\\\% credible intervals.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE, escape = FALSE)
+```
+
+**Table S17**
+
+*Summary of Means, Standard Deviations, and Inter-Variable Correlations (Study 2A)*
+
+```{r tables17_print, include = TRUE, results = 'asis'}
+tables17_print
+```
+
+\newpage
+
+## Complete Multilevel Model Output and Visualizations of Posterior Distributions for Effects of Interest
+
+### Primary Analysis: Does the Interaction Between Participants’ Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in Our Framework?
+
+``` {r s2a_logmemrank_memtotal}
+## PRIMARY ANALYSIS
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_promdom_memtotal_2a <- brm(logmemrank ~ stimrf.e * promdom.strc + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (promdom.strc | stim), data = mf.rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmlogmemrankb_promdom_memtotal_2a, file = "models/mlmlogmemrankb_promdom_memtotal_2a.rda")
+load("models/mlmlogmemrankb_promdom_memtotal_2a.rda")
+# summary(mlmlogmemrankb_promdom_memtotal_2a)
+
+tables18 <- broom::tidy(mlmlogmemrankb_promdom_memtotal_2a)
+tables18 <- rename(tables18, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables18$Type <- NULL
+tables18$component <- NULL
+tables18$Estimate <- round(tables18$Estimate, digits = 2)
+tables18$Post.SD <- round(tables18$Post.SD, digits = 2)
+tables18$Lower <- round(tables18$Lower, digits = 2)
+tables18$Upper <- round(tables18$Upper, digits = 2)
+tables18 <- tables18[!(tables18$Effect == "cor__(Intercept).freq.s"), ]
+tables18 <- tables18[!(tables18$Effect == "cor__(Intercept).length.s"), ]
+tables18 <- tables18[!(tables18$Effect == "cor__freq.s.length.s"), ]
+tables18 <- tables18[!(tables18$Effect == "cor__(Intercept).promdom.strc"), ]
+tables18 <- tables18[!(tables18$Effect == "sd__Observation"), ]
+tables18$Effect[tables18$Effect == "(Intercept)"] <- "Intercept"
+tables18$Effect[tables18$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables18$Effect[tables18$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables18$Effect[tables18$Effect == "memtotal.s"] <- "Output Total"
+tables18$Effect[tables18$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables18$Effect[tables18$Effect == "length.s"] <- "Length"
+tables18$Effect[tables18$Effect == "stimrf.e:promdom.strc"] <- "Activity RF × Prom. (vs. Prev.) Strength Dominance"
+tables18$Effect[tables18$Effect == "sd__(Intercept)"] <- "Intercept"
+tables18$Effect[tables18$Effect == "sd__rftrialcs"] <- "Trial"
+tables18$Effect[tables18$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables18$Effect[tables18$Effect == "sd__length.s"] <- "Length"
+tables18$Effect[tables18$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables18[is.na(tables18)] <- ""
+tables18$group <- NULL
+
+tables18_print <- kable(tables18, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 12) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S18**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2A)*
+
+```{r tables18_print, include = TRUE, results = 'asis'}
+tables18_print
+```
+
+```{r tables18_fig}
+mlmlogmemrankb_promdom_memtotal_2a_post <- posterior_samples(mlmlogmemrankb_promdom_memtotal_2a)
+mlmlogmemrankb_promdom_memtotal_2a_cis <- quantile(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`, probs = c(.025, .975))
+figs11 <- ggplot(mlmlogmemrankb_promdom_memtotal_2a_post, aes(x = `b_stimrf.e:promdom.strc`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_promdom_memtotal_2a_cis[1], xend=mlmlogmemrankb_promdom_memtotal_2a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Regulatory Focus Strength Dominance", y = "Density")
+```
+
+**Figure S11**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Promotion (vs. Prevention) Strength Dominance on Log-Transformed Output Rank (Study 2A)*
+
+```{r figs11, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs11
+```
+
+\newpage 
+
+## Primary Analysis Conducted Without Output Total and Model Comparison
+
+### Primary Analysis: When Output Total Is Not Included as a Covariate, Does the Interaction Between Participants’ Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2a_logmemrank}
+## PRIMARY ANALYSIS: WITHOUT OUTPUT TOTAL
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant
+# set.seed(1234)
+# mlmlogmemrankb_promdom_2a <- brm(logmemrank ~ stimrf.e * promdom.strc + freq.s + length.s + (freq.s + length.s | id) + (promdom.strc | stim), data = mf.rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmlogmemrankb_promdom_2a, file = "models/mlmlogmemrankb_promdom_2a.rda")
+load("models/mlmlogmemrankb_promdom_2a.rda")
+# summary(mlmlogmemrankb_promdom_2a)
+
+tables19 <- broom::tidy(mlmlogmemrankb_promdom_2a)
+tables19 <- rename(tables19, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables19$Type <- NULL
+tables19$component <- NULL
+tables19$Estimate <- round(tables19$Estimate, digits = 2)
+tables19$Post.SD <- round(tables19$Post.SD, digits = 2)
+tables19$Lower <- round(tables19$Lower, digits = 2)
+tables19$Upper <- round(tables19$Upper, digits = 2)
+tables19 <- tables19[!(tables19$Effect == "cor__(Intercept).freq.s"), ]
+tables19 <- tables19[!(tables19$Effect == "cor__(Intercept).length.s"), ]
+tables19 <- tables19[!(tables19$Effect == "cor__freq.s.length.s"), ]
+tables19 <- tables19[!(tables19$Effect == "cor__(Intercept).promdom.strc"), ]
+tables19 <- tables19[!(tables19$Effect == "sd__Observation"), ]
+tables19$Effect[tables19$Effect == "(Intercept)"] <- "Intercept"
+tables19$Effect[tables19$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables19$Effect[tables19$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables19$Effect[tables19$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables19$Effect[tables19$Effect == "length.s"] <- "Length"
+tables19$Effect[tables19$Effect == "stimrf.e:promdom.strc"] <- "Activity RF × Prom. (vs. Prev.) Strength Dominance"
+tables19$Effect[tables19$Effect == "sd__(Intercept)"] <- "Intercept"
+tables19$Effect[tables19$Effect == "sd__rftrialcs"] <- "Trial"
+tables19$Effect[tables19$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables19$Effect[tables19$Effect == "sd__length.s"] <- "Length"
+tables19$Effect[tables19$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables19[is.na(tables19)] <- ""
+tables19$group <- NULL
+
+tables19_print <- kable(tables19, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 6) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 7, 9) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 10, 11) %>%
+  row_spec(6, bold = T)
+```
+
+**Table S19**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2A; Output Total Not Included as Covariate)*
+
+```{r tables19_print, include = TRUE, results = 'asis'}
+tables19_print
+```
+
+```{r tables19_fig}
+mlmlogmemrankb_promdom_2a_post <- posterior_samples(mlmlogmemrankb_promdom_2a)
+mlmlogmemrankb_promdom_2a_cis <- quantile(mlmlogmemrankb_promdom_2a_post$`b_stimrf.e:promdom.strc`, probs = c(.025, .975))
+figs12 <- ggplot(mlmlogmemrankb_promdom_2a_post, aes(x = `b_stimrf.e:promdom.strc`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_promdom_2a_post$`b_stimrf.e:promdom.strc`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_promdom_2a_cis[1], xend=mlmlogmemrankb_promdom_2a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.25, 0.775)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Regulatory Focus Strength Dominance", y = "Density")
+```
+
+**Figure S12**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Promotion (vs. Prevention) Strength Dominance on Log-Transformed Output Rank (Study 2A; Output Total Not Included as Covariate)*
+
+```{r figs12, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs12
+```
+
+``` {r s2a_logmemrank_modelcomparison, eval = FALSE, cache = TRUE}
+## Model comparison using leave-one-out cross-validation
+
+# Add leave-one-out ("loo") model fit criterion to each model object
+mlmlogmemrankb_promdom_2a <- add_criterion(mlmlogmemrankb_promdom_2a, "loo")
+mlmlogmemrankb_promdom_memtotal_2a <- add_criterion(mlmlogmemrankb_promdom_memtotal_2a, "loo")
+
+# Compare model fit criteria
+loo_2a <- loo_compare(mlmlogmemrankb_promdom_2a, mlmlogmemrankb_promdom_memtotal_2a, criterion = "loo")
+# Model is a better fit when including memtotal; to view ELPD_LOO for each model, run the following line:
+# print(loo_2a, simplify = FALSE)
+```
+
+To compare the two models that include versus exclude output total as a covariate, we estimated the difference in the models' expected log pointwise predictive density (ELPD) for a new dataset. The ELPD of the model *including* output total (-235.2) was greater than ELPD of the model *excluding* output total (-257.2), indicating that the model that includes output total has greater expected predictive accuracy.
+
+\newpage
+
+## Exploratory Analysis Conducted with Data from First 13 Outputted Activities Only
+
+### Exploratory Analysis: When Examining Activities with the Greatest Output Primacy, Does the Interaction Between Participants’ Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2a_logmemrank_f13_memtotal}
+## EXPLORATORY ANALYSIS: FIRST 13 OUTPUTTED ACTIVITIES ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_promdom_f13_memtotal_2a <- brm(logmemrank ~ stimrf.e * promdom.strc + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (promdom.strc | stim), data = mf.rmf.f13, cores = 4, chains = 4)
+# save(mlmlogmemrankb_promdom_f13_memtotal_2a, file = "models/mlmlogmemrankb_promdom_f13_memtotal_2a.rda")
+load("models/mlmlogmemrankb_promdom_f13_memtotal_2a.rda")
+# summary(mlmlogmemrankb_promdom_f13_memtotal_2a)
+
+tables20 <- broom::tidy(mlmlogmemrankb_promdom_f13_memtotal_2a)
+tables20 <- rename(tables20, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables20$Type <- NULL
+tables20$component <- NULL
+tables20$Estimate <- round(tables20$Estimate, digits = 2)
+tables20$Post.SD <- round(tables20$Post.SD, digits = 2)
+tables20$Lower <- round(tables20$Lower, digits = 2)
+tables20$Upper <- round(tables20$Upper, digits = 2)
+tables20 <- tables20[!(tables20$Effect == "cor__(Intercept).freq.s"), ]
+tables20 <- tables20[!(tables20$Effect == "cor__(Intercept).length.s"), ]
+tables20 <- tables20[!(tables20$Effect == "cor__freq.s.length.s"), ]
+tables20 <- tables20[!(tables20$Effect == "cor__(Intercept).promdom.strc"), ]
+tables20 <- tables20[!(tables20$Effect == "sd__Observation"), ]
+tables20$Effect[tables20$Effect == "(Intercept)"] <- "Intercept"
+tables20$Effect[tables20$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables20$Effect[tables20$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables20$Effect[tables20$Effect == "memtotal.s"] <- "Output Total"
+tables20$Effect[tables20$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables20$Effect[tables20$Effect == "length.s"] <- "Length"
+tables20$Effect[tables20$Effect == "stimrf.e:promdom.strc"] <- "Activity RF × Prom. (vs. Prev.) Strength Dominance"
+tables20$Effect[tables20$Effect == "sd__(Intercept)"] <- "Intercept"
+tables20$Effect[tables20$Effect == "sd__rftrialcs"] <- "Trial"
+tables20$Effect[tables20$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables20$Effect[tables20$Effect == "sd__length.s"] <- "Length"
+tables20$Effect[tables20$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables20[is.na(tables20)] <- ""
+tables20$group <- NULL
+
+tables20_print <- kable(tables20, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 12) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S20**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2A; Data from First 13 Outputted Activities Only)*
+
+```{r tables20_print, include = TRUE, results = 'asis'}
+tables20_print
+```
+
+```{r tables20_fig}
+mlmlogmemrankb_promdom_memtotal_2a_post <- posterior_samples(mlmlogmemrankb_promdom_f13_memtotal_2a)
+mlmlogmemrankb_promdom_memtotal_2a_cis <- quantile(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`, probs = c(.025, .975))
+figs13 <- ggplot(mlmlogmemrankb_promdom_memtotal_2a_post, aes(x = `b_stimrf.e:promdom.strc`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_promdom_memtotal_2a_cis[1], xend=mlmlogmemrankb_promdom_memtotal_2a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Regulatory Focus Strength Dominance", y = "Density")
+```
+
+**Figure S13**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Promotion (vs. Prevention) Strength Dominance on Log-Transformed Output Rank (Study 2A; Data from First 13 Outputted Activities Only)*
+
+```{r figs13, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs13
+```
+
+\newpage
+
+## Exploratory Analysis Conducted with Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only
+
+### Exploratory Analysis: When Examining Activities Outputted by Participants Who Recalled at Least One Prevention Process Activity and One Promotion Process Activity, Does the Interaction Between Participants’ Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2a_logmemrank_memboth_memtotal}
+## EXPLORATORY ANALYSIS: REMEMBERED PREVENTION PROCESS *AND* PROMOTION PROCESS ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_promdom_memboth_memtotal_2a <- brm(logmemrank ~ stimrf.e * promdom.strc + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (promdom.strc | stim), data = mf.rmf.memboth, cores = 4, chains = 4)
+# save(mlmlogmemrankb_promdom_memboth_memtotal_2a, file = "models/mlmlogmemrankb_promdom_memboth_memtotal_2a.rda")
+load("models/mlmlogmemrankb_promdom_memboth_memtotal_2a.rda")
+# summary(mlmlogmemrankb_promdom_memboth_memtotal_2a)
+
+tables21 <- broom::tidy(mlmlogmemrankb_promdom_memboth_memtotal_2a)
+tables21 <- rename(tables21, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables21$Type <- NULL
+tables21$component <- NULL
+tables21$Estimate <- round(tables21$Estimate, digits = 2)
+tables21$Post.SD <- round(tables21$Post.SD, digits = 2)
+tables21$Lower <- round(tables21$Lower, digits = 2)
+tables21$Upper <- round(tables21$Upper, digits = 2)
+tables21 <- tables21[!(tables21$Effect == "cor__(Intercept).freq.s"), ]
+tables21 <- tables21[!(tables21$Effect == "cor__(Intercept).length.s"), ]
+tables21 <- tables21[!(tables21$Effect == "cor__freq.s.length.s"), ]
+tables21 <- tables21[!(tables21$Effect == "cor__(Intercept).promdom.strc"), ]
+tables21 <- tables21[!(tables21$Effect == "sd__Observation"), ]
+tables21$Effect[tables21$Effect == "(Intercept)"] <- "Intercept"
+tables21$Effect[tables21$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables21$Effect[tables21$Effect == "promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables21$Effect[tables21$Effect == "memtotal.s"] <- "Output Total"
+tables21$Effect[tables21$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables21$Effect[tables21$Effect == "length.s"] <- "Length"
+tables21$Effect[tables21$Effect == "stimrf.e:promdom.strc"] <- "Activity RF × Prom. (vs. Prev.) Strength Dominance"
+tables21$Effect[tables21$Effect == "sd__(Intercept)"] <- "Intercept"
+tables21$Effect[tables21$Effect == "sd__rftrialcs"] <- "Trial"
+tables21$Effect[tables21$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables21$Effect[tables21$Effect == "sd__length.s"] <- "Length"
+tables21$Effect[tables21$Effect == "sd__promdom.strc"] <- "Promotion (vs. Prevention) Strength Dominance"
+tables21[is.na(tables21)] <- ""
+tables21$group <- NULL
+
+tables21_print <- kable(tables21, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 12) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S21**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2A; Data from Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only)*
+
+```{r tables21_print, include = TRUE, results = 'asis'}
+tables21_print
+```
+
+```{r tables21_fig}
+mlmlogmemrankb_promdom_memtotal_2a_post <- posterior_samples(mlmlogmemrankb_promdom_memboth_memtotal_2a)
+mlmlogmemrankb_promdom_memtotal_2a_cis <- quantile(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`, probs = c(.025, .975))
+figs14 <- ggplot(mlmlogmemrankb_promdom_memtotal_2a_post, aes(x = `b_stimrf.e:promdom.strc`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_promdom_memtotal_2a_post$`b_stimrf.e:promdom.strc`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_promdom_memtotal_2a_cis[1], xend=mlmlogmemrankb_promdom_memtotal_2a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.15, 0.8)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Regulatory Focus Strength Dominance", y = "Density")
+```
+
+**Figure S14**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Promotion (vs. Prevention) Strength Dominance on Log-Transformed Output Rank (Study 2A; Data from Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only)*
+
+```{r figs14, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs14
+```
+
+\newpage
+
+## Exploratory Analysis with Promotion Strength and Prevention Strength as Separate Predictors
+
+### Exploratory Analysis: When Including for Promotion Strength and Prevention Strength as Separate Predictors (Rather Than a Single Promotion vs. Prevention Strength Dominance Score), Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2a_logmemrank_memtotal_promprev}
+## PRIMARY MODEL: WITH PROM AND PREV STRENGTH AS SEPARATE PREDICTORS
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant
+# set.seed(1234)
+# mlmlogmemrankb_memtotal_promprev_2a <- brm(logmemrank ~ stimrf.e * prom.strcs + stimrf.e * prev.strcs + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (prom.strcs + prev.strcs | stim), data = mf.rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmlogmemrankb_memtotal_promprev_2a, file = "models/mlmlogmemrankb_memtotal_promprev_2a.rda")
+load("models/mlmlogmemrankb_memtotal_promprev_2a.rda")
+# summary(mlmlogmemrankb_memtotal_promprev_2a)
+
+tables22 <- broom::tidy(mlmlogmemrankb_memtotal_promprev_2a)
+tables22 <- rename(tables22, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables22$Type <- NULL
+tables22$component <- NULL
+tables22$Estimate <- round(tables22$Estimate, digits = 2)
+tables22$Post.SD <- round(tables22$Post.SD, digits = 2)
+tables22$Lower <- round(tables22$Lower, digits = 2)
+tables22$Upper <- round(tables22$Upper, digits = 2)
+tables22 <- tables22[!(tables22$Effect == "cor__(Intercept).freq.s"), ]
+tables22 <- tables22[!(tables22$Effect == "cor__(Intercept).length.s"), ]
+tables22 <- tables22[!(tables22$Effect == "cor__freq.s.length.s"), ]
+tables22 <- tables22[!(tables22$Effect == "cor__(Intercept).prom.strcs"), ]
+tables22 <- tables22[!(tables22$Effect == "cor__(Intercept).prev.strcs"), ]
+tables22 <- tables22[!(tables22$Effect == "cor__prom.strcs.prev.strcs"), ]
+tables22 <- tables22[!(tables22$Effect == "sd__Observation"), ]
+tables22$Effect[tables22$Effect == "(Intercept)"] <- "Intercept"
+tables22$Effect[tables22$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables22$Effect[tables22$Effect == "prom.strcs"] <- "Promotion Strength"
+tables22$Effect[tables22$Effect == "prev.strcs"] <- "Prevention Strength"
+tables22$Effect[tables22$Effect == "memtotal.s"] <- "Output Total"
+tables22$Effect[tables22$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables22$Effect[tables22$Effect == "length.s"] <- "Length"
+tables22$Effect[tables22$Effect == "stimrf.e:prom.strcs"] <- "Activity RF × Promotion Strength"
+tables22$Effect[tables22$Effect == "stimrf.e:prev.strcs"] <- "Activity RF × Prevention Strength"
+tables22$Effect[tables22$Effect == "sd__(Intercept)"] <- "Intercept"
+tables22$Effect[tables22$Effect == "sd__rftrialcs"] <- "Trial"
+tables22$Effect[tables22$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables22$Effect[tables22$Effect == "sd__length.s"] <- "Length"
+tables22$Effect[tables22$Effect == "sd__prom.strcs"] <- "Promotion Strength"
+tables22$Effect[tables22$Effect == "sd__prev.strcs"] <- "Prevention Strength "
+tables22[is.na(tables22)] <- ""
+tables22$group <- NULL
+
+tables22_print <- kable(tables22, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 9) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 10, 12) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 13, 15) %>%
+  row_spec(8, bold = T) %>%
+  row_spec(9, bold = T)
+```
+
+**Table S22**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2A; Promotion Strength and Prevention Strength Included as Separate Predictors)*
+
+```{r tables22_print, include = TRUE, results = 'asis'}
+tables22_print
+```
+
+```{r tables22_fig}
+mlmlogmemrankb_memtotal_promprev_2a_post <- posterior_samples(mlmlogmemrankb_memtotal_promprev_2a)
+
+mlmlogmemrankb_memtotal_promprev_2a_prom_cis <- quantile(mlmlogmemrankb_memtotal_promprev_2a_post$`b_stimrf.e:prom.strcs`, probs = c(.025, .975))
+figs15 <- ggplot(mlmlogmemrankb_memtotal_promprev_2a_post, aes(x = `b_stimrf.e:prom.strcs`)) +
+  geom_density(color = "seagreen3", fill = "seagreen3", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_memtotal_promprev_2a_post$`b_stimrf.e:prom.strcs`), y = 0.0005),
+             size = 4, alpha = .8, color = "seagreen3") +
+  geom_segment(aes(x=mlmlogmemrankb_memtotal_promprev_2a_prom_cis[1], xend=mlmlogmemrankb_memtotal_promprev_2a_prom_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "seagreen3") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Promotion Strength", y = "Density")
+
+mlmlogmemrankb_memtotal_promprev_2a_prev_cis <- quantile(mlmlogmemrankb_memtotal_promprev_2a_post$`b_stimrf.e:prev.strcs`, probs = c(.025, .975))
+figs16 <- ggplot(mlmlogmemrankb_memtotal_promprev_2a_post, aes(x = `b_stimrf.e:prev.strcs`)) +
+  geom_density(color = "lightcoral", fill = "lightcoral", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_memtotal_promprev_2a_post$`b_stimrf.e:prev.strcs`), y = 0.0005),
+             size = 4, alpha = .8, color = "lightcoral") +
+  geom_segment(aes(x=mlmlogmemrankb_memtotal_promprev_2a_prev_cis[1], xend=mlmlogmemrankb_memtotal_promprev_2a_prev_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "lightcoral") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Prevention Strength", y = "Density")
+```
+
+For plots of posterior distributions of effects of interest, please see the following page.
+
+\newpage
+
+**Figure S15**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Promotion Strength on Log-Transformed Output Rank (Study 2A; Promotion Strength and Prevention Strength Included as Separate Predictors in Model)*
+
+```{r figs15, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs15
+```
+
+**Figure S16**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Prevention Strength on Log-Transformed Output Rank (Study 2A; Promotion Strength and Prevention Strength Included as Separate Predictors in Model)*
+
+```{r figs16, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs16
+```
+
+\newpage
+
+# Study 2B
+
+## Activity List
+
+**Table S23**
+
+*Activity List (Study 2B)*
+
+```{r s2bactlist, include = TRUE, results = 'asis'}
+tables23 <- read.csv(file="data/RFgoalpursuit_study1b2b_actlist.csv", header = TRUE)
+tables23 %>%
+  kable("latex", booktabs = TRUE, align = 'ccc') %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  group_rows("Truth-Oriented Process Activities", 1, 2) %>%
+  group_rows("Control-Oriented Process Activities", 3, 4) %>%
+  group_rows("General Everyday Activities", 5, 5) %>%
+  group_rows("Outcome Attainment Activities", 6, 6) %>%
+  row_spec(0, align = "c") %>%
+  footnote(general = "Activities in the prevention-truth, prevention-control, promotion-truth, and promotion-control categories were treated as regulatory focus-specific goal pursuit activities in our primary and secondary analyses.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+```{r s2b_load}
+load("data/RFgoalpursuit_study2b_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study1b2b_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s2b_subsets}
+# Exclude participants who did not complete DV (i.e., remembered no activities from the framework) =from dataframes
+mfraw <- dplyr::filter(mfraw, memtotal_mot > 0) # n = 119
+mf <- dplyr::filter(mf, memtotal_mot > 0)
+
+# Exclude blank (i.e., unremembered) activities from mf dataframe
+mf <- dplyr::filter(mf, !is.na(logmemrank))
+
+# Subset mf dataframe to only include activities from the framework
+mf.rmf <- dplyr::filter(mf, stimtype == "prevtruth" | stimtype == "prevcontrol" | stimtype == "promtruth" | stimtype == "promcontrol") # n = 916
+
+# Data for 24 stimuli of interest with first 13 remembered activities (mean # of remembered activities)
+mf.rmf.f13 <- mf.rmf %>%
+  filter(memrank >= -13)
+
+# Data for 24 stimuli of interest for participants who remembered at least one promotion word and one prevention word
+mf.rmf.memboth <- mf.rmf %>%
+  filter(!is.na(logmemrank_promdom))
+```
+
+\newpage
+
+## Descriptive Statistics and Inter-Variable Correlations
+
+```{r s2b_desccors, include = TRUE, results = 'asis'}
+desc_nostd <- dplyr::select(mf.rmf, logmemrank, stimrf.e, condition.e, memtotal, freq, length)
+desc_nostd <- rename(desc_nostd, "Log-\nTransformed\nOutput\nRank" = logmemrank, "Hypothesized\nActivity RF" = stimrf.e, "RF Induction\nCondition" = condition.e, "Output\nTotal" = memtotal, "Frequency\nof Use in\nEnglish\nLanguage" = freq, "Length" = length)
+means <- desc_nostd %>%
+  dplyr::summarize_all(funs(mean(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(Mean = V1)
+sds <- desc_nostd %>%
+  dplyr::summarize_all(funs(sd(., na.rm = TRUE))) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(SD = V1)
+tables24_desc <- cbind(means, sds)
+rm(desc_nostd, means, sds)
+tables24_desc$` ` <- 1:6
+tables24_desc$Variable <- rownames(tables24_desc)
+tables24_desc <- dplyr::select(tables24_desc, ` `, Variable, Mean, SD)
+rownames(tables24_desc) <- c("1", "2", "3", "4", "5", "6")
+tables24_desc$Mean <- myround(tables24_desc$Mean, digits = 2)
+tables24_desc$SD <- myround(tables24_desc$SD, digits = 2)
+
+# 1. logmemrank
+# 2. stimrf.e
+# 3. condition.e
+# 4. memtotal.s
+# 5. freq.s
+# 6. length.s
+
+# cor_1_2 <- brm(bf(mvbind(logmemrank, stimrf.e) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_2, file = "models/cor_1_2_2b.rda")
+load("models/cor_1_2_2b.rda")
+# summary(cor_1_2)
+cor_1_2 <- as.data.frame(summary(cor_1_2)$rescor_pars)
+cor_1_2 <- paste(myround(cor_1_2[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_2[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_2[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_3 <- brm(bf(mvbind(logmemrank, condition.e) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_3, file = "models/cor_1_3_2b.rda")
+load("models/cor_1_3_2b.rda")
+# summary(cor_1_3)
+cor_1_3 <- as.data.frame(summary(cor_1_3)$rescor_pars)
+cor_1_3 <- paste(myround(cor_1_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_4 <- brm(bf(mvbind(logmemrank, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_4, file = "models/cor_1_4_2b.rda")
+load("models/cor_1_4_2b.rda")
+# summary(cor_1_4)
+cor_1_4 <- as.data.frame(summary(cor_1_4)$rescor_pars)
+cor_1_4 <- paste(myround(cor_1_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_5 <- brm(bf(mvbind(logmemrank, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_5, file = "models/cor_1_5_2b.rda")
+load("models/cor_1_5_2b.rda")
+# summary(cor_1_5)
+cor_1_5 <- as.data.frame(summary(cor_1_5)$rescor_pars)
+cor_1_5 <- paste(myround(cor_1_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_1_6 <- brm(bf(mvbind(logmemrank, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_1_6, file = "models/cor_1_6_2b.rda")
+load("models/cor_1_6_2b.rda")
+# summary(cor_1_6)
+cor_1_6 <- as.data.frame(summary(cor_1_6)$rescor_pars)
+cor_1_6 <- paste(myround(cor_1_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_1_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_1_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_3 <- brm(bf(mvbind(stimrf.e, condition.e) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_3, file = "models/cor_2_3_2b.rda")
+load("models/cor_2_3_2b.rda")
+# summary(cor_2_3)
+cor_2_3 <- as.data.frame(summary(cor_2_3)$rescor_pars)
+cor_2_3 <- paste(myround(cor_2_3[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_3[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_3[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_4 <- brm(bf(mvbind(stimrf.e, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_4, file = "models/cor_2_4_2b.rda")
+load("models/cor_2_4_2b.rda")
+# summary(cor_2_4)
+cor_2_4 <- as.data.frame(summary(cor_2_4)$rescor_pars)
+cor_2_4 <- paste(myround(cor_2_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_5 <- brm(bf(mvbind(stimrf.e, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_5, file = "models/cor_2_5_2b.rda")
+load("models/cor_2_5_2b.rda")
+# summary(cor_2_5)
+cor_2_5 <- as.data.frame(summary(cor_2_5)$rescor_pars)
+cor_2_5 <- paste(myround(cor_2_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_2_6 <- brm(bf(mvbind(stimrf.e, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_2_6, file = "models/cor_2_6_2b.rda")
+load("models/cor_2_6_2b.rda")
+# summary(cor_2_6)
+cor_2_6 <- as.data.frame(summary(cor_2_6)$rescor_pars)
+cor_2_6 <- paste(myround(cor_2_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_2_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_2_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_4 <- brm(bf(mvbind(condition.e, memtotal.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_4, file = "models/cor_3_4_2b.rda")
+load("models/cor_3_4_2b.rda")
+# summary(cor_3_4)
+cor_3_4 <- as.data.frame(summary(cor_3_4)$rescor_pars)
+cor_3_4 <- paste(myround(cor_3_4[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_4[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_4[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_5 <- brm(bf(mvbind(condition.e, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_5, file = "models/cor_3_5_2b.rda")
+load("models/cor_3_5_2b.rda")
+# summary(cor_3_5)
+cor_3_5 <- as.data.frame(summary(cor_3_5)$rescor_pars)
+cor_3_5 <- paste(myround(cor_3_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_3_6 <- brm(bf(mvbind(condition.e, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_3_6, file = "models/cor_3_6_2b.rda")
+load("models/cor_3_6_2b.rda")
+# summary(cor_3_6)
+cor_3_6 <- as.data.frame(summary(cor_3_6)$rescor_pars)
+cor_3_6 <- paste(myround(cor_3_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_3_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_3_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_5 <- brm(bf(mvbind(memtotal.s, freq.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_5, file = "models/cor_4_5_2b.rda")
+load("models/cor_4_5_2b.rda")
+# summary(cor_4_5)
+cor_4_5 <- as.data.frame(summary(cor_4_5)$rescor_pars)
+cor_4_5 <- paste(myround(cor_4_5[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_5[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_5[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_4_6 <- brm(bf(mvbind(memtotal.s, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_4_6, file = "models/cor_4_6_2b.rda")
+load("models/cor_4_6_2b.rda")
+# summary(cor_4_6)
+cor_4_6 <- as.data.frame(summary(cor_4_6)$rescor_pars)
+cor_4_6 <- paste(myround(cor_4_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_4_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_4_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+# cor_5_6 <- brm(bf(mvbind(freq.s, length.s) ~ 1) + set_rescor(TRUE), data = mf.rmf, chains = 4, cores = 4, seed = 1234)
+# save(cor_5_6, file = "models/cor_5_6_2b.rda")
+load("models/cor_5_6_2b.rda")
+# summary(cor_5_6)
+cor_5_6 <- as.data.frame(summary(cor_5_6)$rescor_pars)
+cor_5_6 <- paste(myround(cor_5_6[1, "Estimate"], digits = 2), "\n{[}", myround(cor_5_6[1, "l-95% CI"], digits = 2), ", ", myround(cor_5_6[1, "u-95% CI"], digits = 2), "{]}", sep = "")
+
+tables24_cors <- data.frame("1" = c("1.00", cor_1_2, cor_1_3, cor_1_4, cor_1_5, cor_1_6),
+                    "2" = c(" ", "1.00", cor_2_3, cor_2_4, cor_2_5, cor_2_6),
+                    "3" = c(" ", " ", "1.00", cor_3_4, cor_3_5, cor_3_6),
+                    "4" = c(" ", " ", " ", "1.00", cor_4_5, cor_4_6),
+                    "5" = c(" ", " ", " ", " ", "1.00", cor_5_6))
+colnames(tables24_cors) <- c("1", "2", "3", "4", "5")
+rownames(tables24_cors) <- c("1", "2", "3", "4", "5", "6")
+
+tables24_desc$Variable <- linebreak(tables24_desc$Variable, align = "l")
+
+tables24_cors <- tables24_cors %>%
+  mutate_all(linebreak, align = "c")
+
+tables24 <- cbind(tables24_desc, tables24_cors)
+rm(tables24_desc, tables24_cors)
+
+tables24_print <- kable(tables24, "latex", booktabs = TRUE, align = 'rlccccccc', escape = FALSE,
+                         linesep = "\\addlinespace", col.names = linebreak(names(tables24))) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 4, "Zero-Order Inter-Variable Correlations" = 5)) %>%
+  footnote(general = "RF = Regulatory Focus. Correlation coefficients were estimated using Bayesian methods; brackets contain 95\\\\% credible intervals.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE, escape = FALSE)
+```
+
+**Table S24**
+
+*Summary of Means, Standard Deviations, and Inter-Variable Correlations (Study 2B)*
+
+```{r tables24_print, include = TRUE, results = 'asis'}
+tables24_print
+```
+
+\newpage
+
+## Complete Multilevel Model Output and Visualizations of Posterior Distributions for Effects of Interest
+
+### Primary Analysis: Does the Interaction Between Participants’ Induced Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_memtotal}
+## PRIMARY ANALYSIS
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf, cores = 4, chains = 4)
+# save(mlmlogmemrankb_memtotal_2b, file = "models/mlmlogmemrankb_memtotal_2b.rda")
+load("models/mlmlogmemrankb_memtotal_2b.rda")
+# summary(mlmlogmemrankb_memtotal_2b) # ns, right direction
+
+tables25 <- broom::tidy(mlmlogmemrankb_memtotal_2b)
+tables25 <- rename(tables25, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables25$Type <- NULL
+tables25$component <- NULL
+tables25$Estimate <- round(tables25$Estimate, digits = 2)
+tables25$Post.SD <- round(tables25$Post.SD, digits = 2)
+tables25$Lower <- round(tables25$Lower, digits = 2)
+tables25$Upper <- round(tables25$Upper, digits = 2)
+tables25 <- tables25[!(tables25$Effect == "cor__(Intercept).freq.s"), ]
+tables25 <- tables25[!(tables25$Effect == "cor__(Intercept).length.s"), ]
+tables25 <- tables25[!(tables25$Effect == "cor__freq.s.length.s"), ]
+tables25 <- tables25[!(tables25$Effect == "sd__Observation"), ]
+tables25$Effect[tables25$Effect == "(Intercept)"] <- "Intercept"
+tables25$Effect[tables25$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables25$Effect[tables25$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables25$Effect[tables25$Effect == "memtotal.s"] <- "Output Total"
+tables25$Effect[tables25$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables25$Effect[tables25$Effect == "length.s"] <- "Length"
+tables25$Effect[tables25$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables25$Effect[tables25$Effect == "sd__(Intercept)"] <- "Intercept"
+tables25$Effect[tables25$Effect == "sd__rftrialcs"] <- "Trial"
+tables25$Effect[tables25$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables25$Effect[tables25$Effect == "sd__length.s"] <- "Length"
+tables25[is.na(tables25)] <- ""
+tables25$group <- NULL
+
+tables25_print <- kable(tables25, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 11) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S25**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B)*
+
+```{r tables25_print, include = TRUE, results = 'asis'}
+tables25_print
+```
+
+```{r tables25_fig}
+mlmlogmemrankb_memtotal_2b_post <- posterior_samples(mlmlogmemrankb_memtotal_2b)
+mlmlogmemrankb_memtotal_2b_cis <- quantile(mlmlogmemrankb_memtotal_2b_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs17 <- ggplot(mlmlogmemrankb_memtotal_2b_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_memtotal_2b_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_memtotal_2b_cis[1], xend=mlmlogmemrankb_memtotal_2b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.1, 12.25)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Regulatory Focus Induction Condition", y = "Density")
+```
+
+**Figure S17**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B)*
+
+```{r figs17, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs17
+```
+
+\newpage 
+
+## Primary Analysis Conducted Without Output Total and Model Comparison
+
+### Primary Analysis: When Output Total Is Not Included as a Covariate, Does the Interaction Between Regulatory Focus Induction Condition and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank}
+## PRIMARY ANALYSIS: WITHOUT OUTPUT TOTAL
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant
+# set.seed(1234)
+# mlmlogmemrankb_2b <- brm(logmemrank ~ stimrf.e * condition.e + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf, cores = 4, chains = 4)
+# save(mlmlogmemrankb_2b, file = "models/mlmlogmemrankb_2b.rda")
+load("models/mlmlogmemrankb_2b.rda")
+# summary(mlmlogmemrankb_2b)
+
+tables26 <- broom::tidy(mlmlogmemrankb_2b)
+tables26 <- rename(tables26, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables26$Type <- NULL
+tables26$component <- NULL
+tables26$Estimate <- round(tables26$Estimate, digits = 2)
+tables26$Post.SD <- round(tables26$Post.SD, digits = 2)
+tables26$Lower <- round(tables26$Lower, digits = 2)
+tables26$Upper <- round(tables26$Upper, digits = 2)
+tables26 <- tables26[!(tables26$Effect == "cor__(Intercept).freq.s"), ]
+tables26 <- tables26[!(tables26$Effect == "cor__(Intercept).length.s"), ]
+tables26 <- tables26[!(tables26$Effect == "cor__freq.s.length.s"), ]
+tables26 <- tables26[!(tables26$Effect == "sd__Observation"), ]
+tables26$Effect[tables26$Effect == "(Intercept)"] <- "Intercept"
+tables26$Effect[tables26$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables26$Effect[tables26$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables26$Effect[tables26$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables26$Effect[tables26$Effect == "length.s"] <- "Length"
+tables26$Effect[tables26$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables26$Effect[tables26$Effect == "sd__(Intercept)"] <- "Intercept"
+tables26$Effect[tables26$Effect == "sd__rftrialcs"] <- "Trial"
+tables26$Effect[tables26$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables26$Effect[tables26$Effect == "sd__length.s"] <- "Length"
+tables26[is.na(tables26)] <- ""
+tables26$group <- NULL
+
+tables26_print <- kable(tables26, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 6) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 7, 9) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 10, 10) %>%
+  row_spec(6, bold = T)
+```
+
+**Table S26**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Output Total Not Included as Covariate)*
+
+```{r tables26_print, include = TRUE, results = 'asis'}
+tables26_print
+```
+
+```{r tables26_fig}
+mlmlogmemrankb_2a_post <- posterior_samples(mlmlogmemrankb_2b)
+mlmlogmemrankb_2a_cis <- quantile(mlmlogmemrankb_2a_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs18 <- ggplot(mlmlogmemrankb_2a_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_2a_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_2a_cis[1], xend=mlmlogmemrankb_2a_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.30, 0.45)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Participants' Regulatory Focus Strength Dominance", y = "Density")
+```
+
+**Figure S18**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B; Output Total Not Included as Covariate)*
+
+```{r figs18, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs18
+```
+
+``` {r s2b_logmemrank_modelcomparison, eval = FALSE, cache = TRUE}
+## Model comparison using leave-one-out cross-validation
+
+# Add leave-one-out ("loo") model fit criterion to each model object
+mlmlogmemrankb_2b <- add_criterion(mlmlogmemrankb_2b, "loo")
+mlmlogmemrankb_memtotal_2b <- add_criterion(mlmlogmemrankb_memtotal_2b, "loo")
+
+# Compare model fit criteria
+loo_2b <- loo_compare(mlmlogmemrankb_2b, mlmlogmemrankb_memtotal_2b, criterion = "loo")
+# Model is a better fit when including memtotal; to view ELPD_LOO for each model, run the following line:
+# print(loo_2b, simplify = FALSE)
+```
+
+To compare the two models that include versus exclude output total as a covariate, we estimated the difference in the models' expected log pointwise predictive density (ELPD) for a new dataset. The ELPD of the model *including* output total (-995.8) was greater than ELPD of the model *excluding* output total (-1040.0), indicating that the model that includes output total has greater expected predictive accuracy.
+
+\newpage
+
+## Exploratory Analysis Conducted with Data from First 13 Outputted Activities Only
+
+### Exploratory Analysis: When Examining Activities with the Greatest Output Primacy, Does the Interaction Between Regulatory Focus Induction Condition and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_f13_memtotal}
+## EXPLORATORY ANALYSIS: FIRST 13 OUTPUTTED ACTIVITIES ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant
+# set.seed(1234)
+# mlmlogmemrankb_f13_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf.f13, cores = 4, chains = 4)
+# save(mlmlogmemrankb_f13_memtotal_2b, file = "models/mlmlogmemrankb_f13_memtotal_2b.rda")
+load("models/mlmlogmemrankb_f13_memtotal_2b.rda")
+# summary(mlmlogmemrankb_f13_memtotal_2b)
+
+tables27 <- broom::tidy(mlmlogmemrankb_f13_memtotal_2b)
+tables27 <- rename(tables27, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables27$Type <- NULL
+tables27$component <- NULL
+tables27$Estimate <- round(tables27$Estimate, digits = 2)
+tables27$Post.SD <- round(tables27$Post.SD, digits = 2)
+tables27$Upper <- round(tables27$Upper, digits = 2)
+tables27 <- tables27[!(tables27$Effect == "cor__(Intercept).freq.s"), ]
+tables27 <- tables27[!(tables27$Effect == "cor__(Intercept).length.s"), ]
+tables27 <- tables27[!(tables27$Effect == "cor__freq.s.length.s"), ]
+tables27 <- tables27[!(tables27$Effect == "sd__Observation"), ]
+tables27$Effect[tables27$Effect == "(Intercept)"] <- "Intercept"
+tables27$Effect[tables27$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables27$Effect[tables27$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables27$Effect[tables27$Effect == "memtotal.s"] <- "Output Total"
+tables27$Effect[tables27$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables27$Effect[tables27$Effect == "length.s"] <- "Length"
+tables27$Effect[tables27$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables27$Effect[tables27$Effect == "sd__(Intercept)"] <- "Intercept"
+tables27$Effect[tables27$Effect == "sd__rftrialcs"] <- "Trial"
+tables27$Effect[tables27$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables27$Effect[tables27$Effect == "sd__length.s"] <- "Length"
+tables27[is.na(tables27)] <- ""
+tables27[1:6,"Lower"] <- round(tables27[1:6,"Lower"], digits = 2)
+tables27[7:10,"Lower"] <- round(tables27[7:10,"Lower"], digits = 3)
+tables27[11,"Lower"] <- round(tables27[11,"Lower"], digits = 2)
+tables27$Lower <- as.character(tables27$Lower)
+tables27$group <- NULL
+
+tables27_print <- kable(tables27, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 11) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S27**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Data from First 13 Outputted Activities Only)*
+
+```{r tables27_print, include = TRUE, results = 'asis'}
+tables27_print
+```
+
+```{r tables27_fig}
+mlmlogmemrankb_f13_memtotal_2b_post <- posterior_samples(mlmlogmemrankb_f13_memtotal_2b)
+mlmlogmemrankb_f13_memtotal_2b_cis <- quantile(mlmlogmemrankb_f13_memtotal_2b_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs19 <- ggplot(mlmlogmemrankb_f13_memtotal_2b_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_f13_memtotal_2b_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_f13_memtotal_2b_cis[1], xend=mlmlogmemrankb_f13_memtotal_2b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.2, 0.6)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Regulatory Focus Induction Condition", y = "Density")
+```
+
+**Figure S19**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B; Data from First 13 Outputted Activities Only)*
+
+```{r figs19, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs19
+```
+
+\newpage
+
+## Exploratory Analysis Conducted with Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only
+
+### Exploratory Analysis: When Examining Activities Outputted by Participants Who Recalled at Least One Prevention Process Activity and One Promotion Process Activity, Does the Interaction Between Participants’ Regulatory Focus Strength and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_memboth_memtotal}
+## EXPLORATORY ANALYSIS: REMEMBERED PREVENTION PROCESS *AND* PROMOTION PROCESS ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_memboth_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal.s + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf.memboth, cores = 4, chains = 4)
+# save(mlmlogmemrankb_memboth_memtotal_2b, file = "models/mlmlogmemrankb_memboth_memtotal_2b.rda")
+load("models/mlmlogmemrankb_memboth_memtotal_2b.rda")
+# summary(mlmlogmemrankb_memboth_memtotal_2b)
+
+tables28 <- broom::tidy(mlmlogmemrankb_memboth_memtotal_2b)
+tables28 <- rename(tables28, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables28$Type <- NULL
+tables28$component <- NULL
+tables28$Estimate <- round(tables28$Estimate, digits = 2)
+tables28$Post.SD <- round(tables28$Post.SD, digits = 2)
+tables28$Lower <- round(tables28$Lower, digits = 2)
+tables28$Upper <- round(tables28$Upper, digits = 2)
+tables28 <- tables28[!(tables28$Effect == "cor__(Intercept).freq.s"), ]
+tables28 <- tables28[!(tables28$Effect == "cor__(Intercept).length.s"), ]
+tables28 <- tables28[!(tables28$Effect == "cor__freq.s.length.s"), ]
+tables28 <- tables28[!(tables28$Effect == "sd__Observation"), ]
+tables28$Effect[tables28$Effect == "(Intercept)"] <- "Intercept"
+tables28$Effect[tables28$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables28$Effect[tables28$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables28$Effect[tables28$Effect == "memtotal.s"] <- "Output Total"
+tables28$Effect[tables28$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables28$Effect[tables28$Effect == "length.s"] <- "Length"
+tables28$Effect[tables28$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables28$Effect[tables28$Effect == "sd__(Intercept)"] <- "Intercept"
+tables28$Effect[tables28$Effect == "sd__rftrialcs"] <- "Trial"
+tables28$Effect[tables28$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables28$Effect[tables28$Effect == "sd__length.s"] <- "Length"
+tables28[is.na(tables28)] <- ""
+tables28$group <- NULL
+
+tables28_print <- kable(tables28, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 11) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S28**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Data from Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only)*
+
+```{r tables28_print, include = TRUE, results = 'asis'}
+tables28_print
+```
+
+```{r tables28_fig}
+mlmlogmemrankb_memboth_memtotal_2b_post <- posterior_samples(mlmlogmemrankb_memboth_memtotal_2b)
+mlmlogmemrankb_memboth_memtotal_2b_cis <- quantile(mlmlogmemrankb_memboth_memtotal_2b_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs20 <- ggplot(mlmlogmemrankb_memboth_memtotal_2b_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_memboth_memtotal_2b_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_memboth_memtotal_2b_cis[1], xend=mlmlogmemrankb_memboth_memtotal_2b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  #scale_x_continuous(limits = c(-0.2, 0.6)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Regulatory Focus Induction Condition", y = "Density")
+```
+
+**Figure S20**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B; Data from Participants Who Outputted at Least One Prevention Process Activity and One Promotion Process Activity Only)*
+
+```{r figs20, include = TRUE, fig.align = "center", out.width = '55%', out.height = '55%'}
+figs20
+```
+
+\newpage
+
+## Primary and Exploratory Analyses Conducted Among Native English Speakers Only
+
+```{r s2b_subsets_eng}
+# Exclude participants who did not complete DV (i.e., remembered no activities from the framework) =from dataframes
+mfraw_eng <- dplyr::filter(mfraw_eng, memtotal_mot > 0) # n = 76
+mf_eng <- dplyr::filter(mf_eng, memtotal_mot > 0)
+
+# Exclude blank (i.e., unremembered) activities from mf dataframe
+mf_eng <- dplyr::filter(mf_eng, !is.na(logmemrank))
+obs_all_eng <- nrow(dplyr::filter(mf_eng, !is.na(logmemrank))) # 991
+
+# Subset mf dataframe to only include activities from the framework
+mf.rmf.eng <- dplyr::filter(mf_eng, stimtype == "prevtruth" | stimtype == "prevcontrol" | stimtype == "promtruth" | stimtype == "promcontrol") # n = 616
+
+# Data for 24 stimuli of interest with first 13 remembered activities (mean # of remembered activities)
+mf.rmf.f13.eng <- mf.rmf.eng %>%
+  filter(memrank >= -13)
+```
+
+### Primary Analysis: When Examining Responses from Native English Speakers Only, Does the Interaction Between Regulatory Focus Induction Condition and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_eng_memtotal}
+## PRIMARY ANALYSIS: NATIVE ENGLISH SPEAKERS ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_eng_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf.eng, cores = 4, chains = 4)
+# save(mlmlogmemrankb_eng_memtotal_2b, file = "models/mlmlogmemrankb_eng_memtotal_2b.rda")
+load("models/mlmlogmemrankb_eng_memtotal_2b.rda")
+# summary(mlmlogmemrankb_eng_memtotal_2b)
+
+tables29 <- broom::tidy(mlmlogmemrankb_eng_memtotal_2b)
+tables29 <- rename(tables29, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables29$Type <- NULL
+tables29$component <- NULL
+tables29$Estimate <- round(tables29$Estimate, digits = 2)
+tables29$Post.SD <- round(tables29$Post.SD, digits = 2)
+tables29$Lower <- round(tables29$Lower, digits = 2)
+tables29$Upper <- round(tables29$Upper, digits = 2)
+tables29 <- tables29[!(tables29$Effect == "cor__(Intercept).freq.s"), ]
+tables29 <- tables29[!(tables29$Effect == "cor__(Intercept).length.s"), ]
+tables29 <- tables29[!(tables29$Effect == "cor__freq.s.length.s"), ]
+tables29 <- tables29[!(tables29$Effect == "sd__Observation"), ]
+tables29$Effect[tables29$Effect == "(Intercept)"] <- "Intercept"
+tables29$Effect[tables29$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables29$Effect[tables29$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables29$Effect[tables29$Effect == "memtotal.s"] <- "Output Total"
+tables29$Effect[tables29$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables29$Effect[tables29$Effect == "length.s"] <- "Length"
+tables29$Effect[tables29$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables29$Effect[tables29$Effect == "sd__(Intercept)"] <- "Intercept"
+tables29$Effect[tables29$Effect == "sd__rftrialcs"] <- "Trial"
+tables29$Effect[tables29$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables29$Effect[tables29$Effect == "sd__length.s"] <- "Length"
+tables29[is.na(tables29)] <- ""
+tables29$group <- NULL
+
+tables29_print <- kable(tables29, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 11) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S29**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Native English Speakers Only)*
+
+```{r tables29_print, include = TRUE, results = 'asis'}
+tables29_print
+```
+
+```{r tables29_fig}
+mlmlogmemrankb_eng_memtotal_2b_post <- posterior_samples(mlmlogmemrankb_eng_memtotal_2b)
+mlmlogmemrankb_eng_memtotal_2b_cis <- quantile(mlmlogmemrankb_eng_memtotal_2b_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs21 <- ggplot(mlmlogmemrankb_eng_memtotal_2b_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_eng_memtotal_2b_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_eng_memtotal_2b_cis[1], xend=mlmlogmemrankb_eng_memtotal_2b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.3, 0.6)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Regulatory Focus Induction Condition", y = "Density")
+```
+
+**Figure S21**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B; Native English Speakers Only)*
+
+```{r figs21, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs21
+```
+
+\newpage
+
+### Exploratory Analysis: When Examining Responses from Native English Speakers Only and When Examining Activities with the Greatest Output Primacy, Does the Interaction Between Regulatory Focus Induction Condition and Activity Regulatory Focus Predict the Output Rank of Activities in the Framework?
+
+``` {r s2b_logmemrank_f13_eng_memtotal}
+## EXPLORATORY ANALYSIS: FIRST 13 OUTPUTTED ACTIVITIES ONLY
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmlogmemrankb_f13_eng_memtotal_2b <- brm(logmemrank ~ stimrf.e * condition.e + memtotal + freq.s + length.s + (freq.s + length.s | id) + (1 | stim), data = mf.rmf.f13.eng, cores = 4, chains = 4)
+# save(mlmlogmemrankb_f13_eng_memtotal_2b, file = "models/mlmlogmemrankb_f13_eng_memtotal_2b.rda")
+load("models/mlmlogmemrankb_f13_eng_memtotal_2b.rda")
+# summary(mlmlogmemrankb_f13_eng_memtotal_2b)
+
+tables30 <- broom::tidy(mlmlogmemrankb_f13_eng_memtotal_2b)
+tables30 <- rename(tables30, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+tables30$Type <- NULL
+tables30$component <- NULL
+tables30$Estimate <- round(tables30$Estimate, digits = 2)
+tables30$Post.SD <- round(tables30$Post.SD, digits = 2)
+tables30$Lower <- round(tables30$Lower, digits = 2)
+tables30$Upper <- round(tables30$Upper, digits = 2)
+tables30 <- tables30[!(tables30$Effect == "cor__(Intercept).freq.s"), ]
+tables30 <- tables30[!(tables30$Effect == "cor__(Intercept).length.s"), ]
+tables30 <- tables30[!(tables30$Effect == "cor__freq.s.length.s"), ]
+tables30 <- tables30[!(tables30$Effect == "sd__Observation"), ]
+tables30$Effect[tables30$Effect == "(Intercept)"] <- "Intercept"
+tables30$Effect[tables30$Effect == "stimrf.e"] <- "Hypothesized Activity RF (-0.5 = Prev.; 0.5 = Prom.)"
+tables30$Effect[tables30$Effect == "condition.e"] <- "RF Induction Condition (–0.5 = Prev.; +0.5 = Prom.)"
+tables30$Effect[tables30$Effect == "memtotal.s"] <- "Output Total"
+tables30$Effect[tables30$Effect == "freq.s"] <- "Frequency of Use in English Language"
+tables30$Effect[tables30$Effect == "length.s"] <- "Length"
+tables30$Effect[tables30$Effect == "stimrf.e:condition.e"] <- "Activity RF × RF Induction Condition"
+tables30$Effect[tables30$Effect == "sd__(Intercept)"] <- "Intercept"
+tables30$Effect[tables30$Effect == "sd__rftrialcs"] <- "Trial"
+tables30$Effect[tables30$Effect == "sd__freq.s"] <- "Frequency of Use in English Language"
+tables30$Effect[tables30$Effect == "sd__length.s"] <- "Length"
+tables30[is.na(tables30)] <- ""
+tables30$group <- NULL
+
+tables30_print <- kable(tables30, "latex", booktabs = TRUE) %>%
+  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("Fixed Effects", 1, 7) %>%
+  group_rows("Random Effects (Standard Deviation) by Participant", 8, 10) %>%
+  group_rows("Random Effects (Standard Deviation) by Activity", 11, 11) %>%
+  row_spec(7, bold = T)
+```
+
+**Table S30**
+
+*Parameter Estimates for Multilevel Multiple Regression Analysis Predicting Log-Transformed Output Rank of Regulatory Focus-Specific Process Activities (Study 2B; Native English Speakers Only; Data from First 13 Outputted Activities Only)*
+
+```{r tables30_print, include = TRUE, results = 'asis'}
+tables30_print
+```
+
+```{r tables30_fig}
+mlmlogmemrankb_f13_eng_memtotal_2b_post <- posterior_samples(mlmlogmemrankb_f13_eng_memtotal_2b)
+mlmlogmemrankb_f13_eng_memtotal_2b_cis <- quantile(mlmlogmemrankb_f13_eng_memtotal_2b_post$`b_stimrf.e:condition.e`, probs = c(.025, .975))
+figs22 <- ggplot(mlmlogmemrankb_f13_eng_memtotal_2b_post, aes(x = `b_stimrf.e:condition.e`)) +
+  geom_density(color = "#438BFF", fill = "#438BFF", alpha = .4) +
+  geom_point(aes(x = mean(mlmlogmemrankb_f13_eng_memtotal_2b_post$`b_stimrf.e:condition.e`), y = 0.0005),
+             size = 4, alpha = .8, color = "#438BFF") +
+  geom_segment(aes(x=mlmlogmemrankb_f13_eng_memtotal_2b_cis[1], xend=mlmlogmemrankb_f13_eng_memtotal_2b_cis[2], 
+                   y=0.0005, yend=0.0005), 
+               size = 2, alpha = .7, color = "#438BFF") + 
+  geom_vline(aes(xintercept = 0), linetype = "dashed") +
+  scale_x_continuous(limits = c(-0.25, 0.75)) +
+  labs(x = "Slope of Interaction Between Activity Regulatory Focus\nand Regulatory Focus Induction Condition", y = "Density")
+```
+
+**Figure S22**
+
+*Posterior Distribution of Effect of Interaction Between Activity Regulatory Focus and Regulatory Focus Induction Condition on Log-Transformed Output Rank (Study 2B; Native English Speakers Only; Data from First 13 Outputted Activities Only)*
+
+```{r figs22, include = TRUE, fig.align = "center", out.width = '60%', out.height = '60%'}
+figs22
+```

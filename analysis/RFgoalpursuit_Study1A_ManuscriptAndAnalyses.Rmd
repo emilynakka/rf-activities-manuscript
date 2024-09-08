@@ -1,0 +1,605 @@
+---
+title             : "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities (Study 1A)"
+shorttitle        : "Prevention Versus Promotion Goal Pursuit Activities"
+
+author: 
+  - name          : "[Anonymized for Blind Peer Review]"
+
+bibliography      : ["rf-activities.bib"]
+
+floatsintext      : yes
+noextraspace      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : no
+mask              : no
+draft             : no
+
+header-includes   :
+  - \usepackage{setspace}
+  - \usepackage{makecell}
+  - \usepackage{float}
+  - \raggedbottom
+  - \usepackage[utf8]{inputenc}
+  - \DeclareUnicodeCharacter{2588}{-}
+  - \newcommand{\squeezeup}{\vspace{-10mm}}
+
+csl               : "apa.csl"
+documentclass     : "apa7"
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.pos="H")
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+```{r libs}
+# Load libraries
+library(papaja) # Required to generate APA-formatted manuscript
+library(citr) # Required to generate APA-formatted citations
+library(rIP) # Required so usage in data cleaning can be cited
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(broman) # Required for myround() function that doesn't truncate digits
+library(english) # Required to translate numbers into English text
+library(ggrepel) # Required for plots with text
+library(kableExtra) # Required for table styling
+library(brms) # Required for Bayesian multilevel models
+library(broom.mixed) # Required to extract random effects from Bayesian models
+library(Hmisc) # Required to calculate correlation significance
+
+# Define ggplot2 theme
+mytheme = theme_classic(base_size = 14) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = "black", size = 1),
+          strip.text.x = element_blank(),
+          panel.spacing = unit(0.1, "cm"),
+          panel.border = element_rect(color="black", size = 1, fill=NA),
+          text = element_text(family="Helvetica", size=14),
+          axis.line = element_blank(),
+          axis.text.x = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.text.y = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.ticks = element_line(size = .5),
+          axis.ticks.length=unit(-2, "mm"))
+theme_set(mytheme)
+
+# Define functions
+invlog <- function(x) {
+  1/(1 + exp(-(x)))
+}
+
+beff <- function(x) {
+  result <- as.character(x)
+  result <- str_replace_all(result, "\\)", "")
+  result <- str_replace(result, "^.+= ", "")
+  result <- as.numeric(result)
+  result <- myround(result, digits = 2)
+  return(result)
+}
+```
+
+In Study 1A, after completing two brief questionnaires probing their chronic motivational orientations, participants learned about the distinction between prevention and promotion motivation. Then, participants completed a sorting task in which they categorized verbs as either prevention or promotion activities. This study provided an initial opportunity to test if participants’ categorization decisions reflected the proposed framework. Based on Hypothesis 1, we predicted that participants’ categorization decisions for goal pursuit process activities that we predicted were associated with either prevention or promotion would consistently reflect the activities’ hypothesized regulatory focus in the framework. Further, based on Hypothesis 2, we predicted that participants would categorize regulatory focus-specific process activities from the proposed framework more quickly than more general goal pursuit process activities. Finally, we examined whether participants’ categorization decisions were predicted by individual differences in participants’ own chronic promotion versus prevention focus. Although subsequent studies (2A, 2B) tested whether participants’ regulatory focus influenced the accessibility of *relevant* activities, in Study 1A, we did *not* expect that categorization decisions *in general* (i.e., across all kinds of activities) would vary based upon individual differences in participants’ regulatory focus.
+
+## Method
+
+```{r s1a_load}
+load("data/RFgoalpursuit_study1a_clean_deidentified.RData")
+stimlist <- read.csv(file="data/RFgoalpursuit_study1a_stimlist.csv", header = TRUE)
+
+stimlist$length <- nchar(as.character(stimlist$stim))
+stimlist$length.s <- scale(stimlist$length)
+stimlist$freq.s <- scale(stimlist$freq)
+```
+
+```{r s1a_ps}
+## N
+
+# Calculate total number of observations and participants
+obs <- nrow(mf) # 6262
+n <- length(unique(mf$id)) # 61
+
+# Calculate RF observations for each participant
+obsbyn <- mf %>%
+  filter(!is.na(rfdata)) %>%
+  count(id, sort = TRUE)
+obsbyn <- dplyr::rename(obsbyn, rfobs = n)
+
+## AGE
+
+meanage <- round(mean(mfraw$age, na.rm = TRUE), digits = 0) # 37
+maxage <- max(mfraw$age, na.rm = TRUE) # 68
+minage <- min(mfraw$age, na.rm = TRUE) # 24
+sdage <- round(sd(mfraw$age, na.rm = TRUE), digits = 0) # 12
+
+## GENDER
+
+male <- sum(mfraw$gender == "Male") # 31
+female <- sum(mfraw$gender == "Female") # 29
+malepct <- round(male/nrow(mfraw)*100, digits = 0) # 51%
+femalepct <- round(female/nrow(mfraw)*100, digits = 0) # 48%
+
+## LANGUAGE
+
+english <- sum(mfraw$language == "English") # 61
+engpct <- round(english/nrow(mfraw)*100, digits = 0) # 100%
+
+## ETHNICITY
+
+asianpct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Asian")) / nrow(mfraw) * 100, digits = 0) # 7% Asian
+blackpct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Black")) / nrow(mfraw) * 100, digits = 0) # 8% Black
+hisppct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Hispanic")) / nrow(mfraw) * 100, digits = 0) # 2% Hispanic
+multipct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Multiracial")) / nrow(mfraw) * 100, digits = 0) # 2% Multiracial
+natampct <- round(nrow(dplyr::filter(mfraw, ethnicity == "Native Am.")) / nrow(mfraw) * 100, digits = 0) # 0% Native Am.
+whitepct <- round(nrow(dplyr::filter(mfraw, ethnicity == "White")) / nrow(mfraw) * 100, digits = 0) # 80% White
+
+## EDUCATION
+
+hspct <- round(nrow(dplyr::filter(mfraw, education == "High School")) / nrow(mfraw) * 100, digits = 0) # 18% High School
+somecolpct <- round(nrow(dplyr::filter(mfraw, education == "Some College")) / nrow(mfraw) * 100, digits = 0) # 16% Some College
+assocpct <- round(nrow(dplyr::filter(mfraw, education == "Associate's")) / nrow(mfraw) * 100, digits = 0) # 10% Associate's
+bachpct <- round(nrow(dplyr::filter(mfraw, education == "Bachelor's")) / nrow(mfraw) * 100, digits = 0) # 48% Bachelor's
+mastpct <- round(nrow(dplyr::filter(mfraw, education == "Master's")) / nrow(mfraw) * 100, digits = 0) # 8% Master's
+
+## INCOME
+
+zero10pct <- round(nrow(dplyr::filter(mfraw, income == "$0-$10K")) / nrow(mfraw) * 100, digits = 0) # 5% $0-$10K
+ten20pct <- round(nrow(dplyr::filter(mfraw, income == "$10K-$20K")) / nrow(mfraw) * 100, digits = 0) # 7% $10K-$20K
+twenty40pct <- round(nrow(dplyr::filter(mfraw, income == "$20K-$40K")) / nrow(mfraw) * 100, digits = 0) # 21% $20K-$40K
+forty70pct <- round(nrow(dplyr::filter(mfraw, income == "$40K-$70K")) / nrow(mfraw) * 100, digits = 0) # 31% $40K-$70K
+seventy100pct <- round(nrow(dplyr::filter(mfraw, income == "$70K-$100K")) / nrow(mfraw) * 100, digits = 0) # 18% $70K-$100K
+hundred250pct <- round(nrow(dplyr::filter(mfraw, income == "$100K-$250K")) / nrow(mfraw) * 100, digits = 0) # 13% $100K-$250K
+fivehundpct <- round(nrow(dplyr::filter(mfraw, income == "$500K+")) / nrow(mfraw) * 100, digits = 0) # 2% $500K+
+```
+
+### Participants
+
+We conducted a traditional power analysis aimed at detecting a medium-to-large odds ratio effect of *OR* = 6 [@cohen1988] with power of 0.80. This power analysis (G*Power; @fauletal2009; two-tailed; conditional probability that _Y_=1 given _X_=1 under $H_0$=0.5; \( \alpha \)=0.05; binomial _X_ distribution for which \( \pi \)=0.5) indicated that 56 participants would be required. To account for potential exclusions, we set the target sample size at 75 participants.
+
+Data collection took place in February 2019. Using M-Turk, we recruited 75 native English speaking U.S. workers at least 18 years old. All participants were paid \$2. Two workers provided the correct code for payment without completing the study, leaving a sample of `r (n + blocked + nonenglish)` participants. We then examined the dataset for fraudulent responses based on participant IP addresses using `r cite_r(file = "manuscript/rf-activities.bib", pkgs = c("rIP"), withhold = FALSE)`. Eleven responses were submitted by IP addresses flagged as fraudulent, so these responses were excluded. Finally, we examined the number of participants who disregarded the recruitment criteria and participated despite their alternate native language. Only one participant reported a native language other than English, and because the percentage of non-native English speaking participants (`r myround(nonenglishpct * 100, digits = 1)`%) fell below our 10% threshold, this participant was excluded.
+
+These exclusions left a sample of `r n` participants ranging in age from `r minage` to `r maxage` (*M*=`r meanage`; *SD*=`r sdage`). Participants were male (`r malepct`%) and female (`r femalepct`%), with the remaining participants unspecified. They self-identified as White (`r whitepct`%), Black (`r blackpct`%), Asian (`r asianpct`%), Hispanic (`r hisppct`%), and multiracial (`r multipct`%). They indicated the highest level of formal education they have completed as a high school diploma (`r hspct`%), some college (`r somecolpct`%), an associate degree (`r assocpct`%), a bachelor's degree (`r bachpct`%), and a master's degree (`r mastpct`%). They identified their approximate annual household income as \$0--\$10K (`r zero10pct`%), \$10--\$20K (`r ten20pct`%), \$20--\$40K (`r twenty40pct`%), \$40--\$70K (`r forty70pct`%), \$70--\$100K (`r seventy100pct`%), \$100--\$250K (`r hundred250pct`%), and \$500K+ (`r fivehundpct`%). A sensitivity analysis (G*Power; @fauletal2009) showed that this final sample could detect an effect size of _OR_=5.32 or larger for the effect of Hypothesized Activity Regulatory Focus (power=0.80; \( \alpha \)=0.05; two-tailed; conditional probability that _Y_=1 given _X_=1 under $H_0$=0.5; binomial _X_ distribution for which \( \pi \)=0.5).
+
+Finally, as per common practice when working with response latency data [e.g., @carpenteretal2019], we excluded activity categorization decisions for which the response latency was too short (under 250 ms), thus indicating overly fast responding (i.e., “button mashing”), and too long (over 10,000 ms), indicating a lack of attention. After removing these observations, `r obs` total activity categorization decisions remained, with a mean of `r myround(mean(obsbyn$rfobs), digits = 2)` categorization decisions per participant (*SD*=`r myround(sd(obsbyn$rfobs), digits = 2)`). 
+
+```{r s1a_subsets}
+# Subsets based on original predicted RF for Study 1A
+stimsummary <- mf %>%
+  group_by(stim) %>%
+  summarise(meanpromprob = mean(prom_prob, na.rm = T),
+            meanrfrt = mean(rfrt, na.rm = T),
+            meanrflogrt = mean(rflogrt, na.rm = T)) %>%
+  merge(stimlist)
+
+stimsummary_rmf <- mf %>%
+  group_by(stim) %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth") %>%
+  summarise(meanpromprob = mean(prom_prob, na.rm = T),
+            meanrfrt = mean(rfrt, na.rm = T),
+            meanrflogrt = mean(rflogrt, na.rm = T)) %>%
+  merge(stimlist)
+
+rftest <- mf %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  mutate(rfornot = case_when(stimrf == "prom" | stimrf == "prev" ~ "rf", stimrf == "gen" ~ "gen"),
+         rfornot.d = case_when(stimrf == "prom" | stimrf == "prev" ~ 1, stimrf == "gen" ~ 0))
+
+rftest_rmf <- rftest %>%
+  filter(stimtype == "promcontrol" | stimtype == "promtruth" | stimtype == "prevcontrol" | stimtype == "prevtruth")
+
+# Subsets based on final predicted RF for Study 1B
+stimsummary_rmf_1a1b <- mf %>%
+  group_by(stim) %>%
+  filter(stimtype_1b == "promcontrol" | stimtype_1b == "promtruth" | stimtype_1b == "prevcontrol" | stimtype_1b == "prevtruth") %>%
+  summarise(meanpromprob = mean(prom_prob, na.rm = T),
+            meanrfrt = mean(rfrt, na.rm = T),
+            meanrflogrt = mean(rflogrt, na.rm = T)) %>%
+  merge(stimlist)
+
+rftest_1a1b <- mf %>%
+  filter(rftrialtype == "prevL_sort" | rftrialtype == "promL_sort") %>%
+  filter(stimrf_1b != "na") %>%
+  mutate(rfornot_1b = case_when(stimrf_1b == "prom" | stimrf_1b == "prev" ~ "rf", stimrf_1b == "gen" ~ "gen"),
+         rfornot_1b.d = case_when(stimrf_1b == "prom" | stimrf_1b == "prev" ~ 1, stimrf_1b == "gen" ~ 0))
+
+rftest_rmf_1a1b <- rftest_1a1b %>%
+  filter(stimtype_1b == "promcontrol" | stimtype_1b == "promtruth" | stimtype_1b == "prevcontrol" | stimtype_1b == "prevtruth")
+```
+
+### Materials and Measures
+
+#### Preliminary Activity List
+
+To capture the different kinds of goal pursuit process activities associated with prevention versus promotion, we aimed to identify actions that people will take to establish what is real and right (i.e., truth-oriented activities) and manage what happens (i.e., control-oriented activities) when motivated by each system. To generate an initial pool of activities, the authors individually developed lists of verbs for consideration based on extensive conversations about regulatory focus theory and reviews of past empirical work on the unique associations between regulatory focus and variables related to truth and control (see Activities Associated with Prevention and Activities Associated with Promotion sections). We also reviewed several motivational dictionaries that have been developed for use in linguistic analysis, including a regulatory focus dictionary [@gamacheetal2015] and a regulatory mode dictionary [@kanzeetal2019], and appended a range of activities that we considered relevant to the proposed framework. We then expanded on these lists using a thesaurus, and refined them through ongoing conceptual discussions. The list of *prevention-truth* activities included behaviors involving careful evaluation and aimed at certainty, such as *scrutinize*, *judge*, and *verify*. The list of *prevention-control* activities included behaviors involving the vigilant maintenance and protection of a satisfactory status quo, such as *defend*, *preserve*, and *protect*. The list of *promotion-truth* activities included behaviors involving mental exploration and aimed at knowledge growth and generation, such as *imagine*, *discover*, and *explore*. The list of *promotion-control* activities included behaviors involving the initiation of forward-directed action aimed at effecting change, such as *propel*, *accelerate*, and *lead*.
+
+Additionally, in order to distinguish these prevention- and promotion-specific process activities from a more general group of truth- and control-oriented actions, we also generated a pool of goal pursuit process activities that we hypothesized were *not* associated with the prevention or promotion systems per se, including *general* truth activities (e.g., *investigate*, *consider*) and *general* control activities (e.g., *manage*, *operate*). Finally, to provide participants with the ability to practice the primary task with stimuli already known to be associated with prevention or promotion, we selected, using Gamache et al.’s [-@gamacheetal2015] dictionary, six verbs that we believed best reflected the attainment of the desired *outcomes* of a prevention focus (*secure*, *evade*, *prevent*) and a promotion focus (*achieve*, *gain*, *grow*). Through this procedure, we generated an initial list of 57 activities: 34 promotion- and prevention-specific truth- and control-oriented process activities; 17 general truth- and control-oriented process activities; and 6 verbs reflecting the acquisition of promotion- and prevention-specific outcomes. (For a complete list of these activities, see Table S1 in the Supplementary Material.) Importantly, the regulatory focus of each activity hypothesized to relate to regulatory focus was dummy-coded (0=*prevention*; 1=*promotion*). Based on these hypotheses, we manipulated activity regulatory focus (i.e., our primary independent variable) on a within-participants basis in the activity sorting task described next.
+
+#### Activity Sorting Task
+
+Participants categorized each of the verbs in the activity list as prevention or promotion activities within a JavaScript-based sorting task. On-screen instructions directed participants to place their left and right index fingers on their E and I keys, respectively. The labels “prevention” and “promotion” were placed at each of the upper corners of the screen. Instructions described that verbs would appear in the middle of the screen, and that participants should indicate the category to which each verb belongs by pressing the associated key. Participants were directed to proceed as fast as they can, while making as few mistakes as possible, in order to respectively balance concerns with speed and accuracy. In all blocks of trials, activities were selected randomly and without replacement until the block’s activity list was exhausted. Activities were presented one at a time with an inter-trial interval of 2,000 ms. Each activity remained on-screen until the participant’s response, and no feedback was provided after any responses. For each trial, the software recorded the activity, the participant’s categorization decision, and the participant’s response latency in indicating their decision.
+
+The sorting task in Study 1A comprised two groups of trial blocks. In one group, the “prevention” label was placed in the upper left corner and the “promotion” label was placed in the upper right corner; in the second group, the placement of these labels was reversed. (The placement of these category labels was counterbalanced, such that half of participants were randomly assigned to begin with “prevention” on their left and the other half began with “prevention” on their right.) Each of the two groups consisted of two blocks of trials. The first block was a brief practice round consisting of six brief trials intended to familiarize participants with the logistics of the task, in which participants sorted the six verbs already known to reflect the acquisition of prevention- and promotion-specific outcomes. The second block involved completing 51 additional trials which involved categorizing the 51 process activities of interest as prevention or promotion. Upon completing the second block, the position of the labels was reversed and participants completed the second group of trial blocks. Because participants completed the sorting task with the labels in both positions, each participant categorized each activity twice.
+
+```{r s1a_rf.eff}
+# Promotion Pride
+prom.eff_mean <- myround(mean(mfraw$prom.eff, na.rm = T), digits = 2)
+prom.eff_sd <- myround(sd(mfraw$prom.eff, na.rm = T), digits = 2)
+prom.eff <- dplyr::select(mfraw, rfq_1, rfq_3, rfq_7, rfq_9, rfq_10, rfq_11)
+prom.eff$rfq_1 <- 6 - prom.eff$rfq_1
+prom.eff$rfq_9 <- 6 - prom.eff$rfq_9
+prom.eff$rfq_11 <- 6 - prom.eff$rfq_11
+prom.eff_a <- myround(psych::alpha(prom.eff)$total["raw_alpha"], digits = 2)
+rm(prom.eff)
+
+# Prevention Pride
+prev.eff_mean <- myround(mean(mfraw$prev.eff, na.rm = T), digits = 2)
+prev.eff_sd <- myround(sd(mfraw$prev.eff, na.rm = T), digits = 2)
+prev.eff <- dplyr::select(mfraw, rfq_2, rfq_4, rfq_5, rfq_6, rfq_8)
+prev.eff$rfq_2 <- 6 - prev.eff$rfq_2
+prev.eff$rfq_4 <- 6 - prev.eff$rfq_4
+prev.eff$rfq_6 <- 6 - prev.eff$rfq_6
+prev.eff$rfq_8 <- 6 - prev.eff$rfq_8
+prev.eff_a <- myround(psych::alpha(prev.eff)$total["raw_alpha"], digits = 2)
+rm(prev.eff)
+
+# Promotion Pride Dominance
+promdom.eff_mean <- myround(mean(mfraw$promdom.eff, na.rm = T), digits = 2)
+promdom.eff_sd <- myround(sd(mfraw$promdom.eff, na.rm = T), digits = 2)
+```
+
+#### Regulatory Focus Pride
+
+To measure chronic historical effectiveness (i.e., “pride”) in the domains of prevention and promotion, we administered the Regulatory Focus Questionnaire [RFQ; @higginsetal2001]. The RFQ asks participants to respond on five-point scales (1=*never or seldom* or *certainly false* to 5=*very often* or *certainly true*) to eleven items. Five items measure prevention pride (e.g., “Not being careful enough has gotten me into trouble at times”; \( \alpha \)=`r prev.eff_a`) and six items measure promotion pride (e.g., “I feel like I have made progress toward being successful in my life”; \( \alpha \)=`r prom.eff_a`). After mean endorsement levels were determined for each participant ($M_{prevention}$=`r prev.eff_mean`; $SD_{prevention}$=`r prev.eff_sd`; $M_{promotion}$=`r prom.eff_mean`; $SD_{promotion}$=`r prom.eff_sd`), we calculated promotion (*vs.* prevention) pride dominance scores for use in the primary analysis, as these orientations involve competing motivational preferences. As a result, the predominant regulatory focus score reflects a resultant of the two motivational forces, and we were interested in testing if this resultant predicted participants’ categorization decisions across all activity types. We calculated these dominance scores by subtracting each participant’s prevention pride score from their promotion pride score (*M*=`r promdom.eff_mean`; *SD*=`r promdom.eff_sd`). Finally, these promotion pride dominance scores were mean-centered for use in the regression analyses so the reference condition for this variable would reflect the typical level of promotion pride dominance among participants. To do so, we subtracted each participant’s promotion pride dominance score from the promotion pride dominance grand mean.
+
+```{r s1a_rm}
+# Locomotion
+loc_mean <- myround(mean(mfraw$loc, na.rm = T), digits = 2)
+loc_sd <- myround(sd(mfraw$loc, na.rm = T), digits = 2)
+loc <- dplyr::select(mfraw, rmq_1, rmq_3, rmq_4, rmq_5, rmq_8, rmq_16, rmq_21, rmq_25, rmq_28, rmq_29, rmq_13, rmq_24)
+loc$rmq_13 <- 7 - loc$rmq_13
+loc$rmq_24 <- 7 - loc$rmq_24
+loc_a <- psych::alpha(loc)$total$raw_alpha
+rm(loc)
+
+# Assessment
+ass_mean <- myround(mean(mfraw$ass, na.rm = T), digits = 2)
+ass_sd <- myround(sd(mfraw$ass, na.rm = T), digits = 2)
+ass <- dplyr::select(mfraw, rmq_2, rmq_6, rmq_7, rmq_9, rmq_10, rmq_11, rmq_15, rmq_19, rmq_20, rmq_22, rmq_27, rmq_30)
+ass$rmq_2 <- 7 - ass$rmq_2
+ass$rmq_10 <- 7 - ass$rmq_10
+ass$rmq_27 <- 7 - ass$rmq_27
+ass_a <- psych::alpha(ass)$total$raw_alpha
+rm(ass)
+```
+
+#### Further Measures
+
+To control for any potential effects of stimulus length or frequency of use in the English language, we measured each of these variables for all activities. Activity length was calculated based on the number of characters in each stimulus word. Activity frequency of use in the English language was taken from the Corpus of Contemporary American English [@davies2008].
+
+For exploratory purposes, we also measured participants’ assessment and locomotion orientations using the Regulatory Mode Questionnaire [RMQ; @kruglanskietal2000]. Assessment and locomotion are self-regulatory functions reflecting specific types of truth and control motivation, respectively. Assessment involves the critical evaluation of goals or means, and locomotion involves effecting change through movement from state to state [@kruglanskietal2000; @higginsetal2003]. The RMQ asks participants to respond on six-point scales (1=*strongly disagree* to 6=*strongly agree*) to 30 items. Twelve of these items measure locomotion (e.g., “I don't mind doing things even if they involve extra effort”; *M*=`r loc_mean`; *SD*=`r loc_sd`; \( \alpha \)=`r loc_a`) and twelve others measure assessment (e.g., “I often critique work done by myself and others”; *M*=`r ass_mean`; *SD*=`r ass_sd`; \( \alpha \)=`r ass_a`). Additionally, we administered four exploratory measures probing participants’ experience in completing the activity sorting task. Using a five-point scale (1=*extremely easy* to 5=*extremely difficult*), participants indicated: “Overall, how difficult was it to categorize these words as promotion vs. prevention” (*M*=`r myround(mean(mfraw$diff_process, na.rm = T), digits = 2)`; *SD*=`r myround(sd(mfraw$diff_process, na.rm = T), digits = 2)`). Participants also responded to three open-ended questions: “As best you can, please describe how you made your categorization decisions”; “If you remember any words that were especially difficult to categorize, please list them here”; and “Please enter any additional feedback you’d like to provide here”. Although responses to these exploratory measures are not discussed further here, they are available within the study dataset provided on the Open Science Framework (OSF) project page associated with the present research (https://osf.io/ybcaq/?view_only=8bf7abc0419f4f618662f6c870aaea60).
+
+### Procedure
+
+After consenting to participate in the study, participants completed two motivational questionnaires: the RFQ and RMQ. Then, participants read that they would learn about two different types of motivation called prevention and promotion. To ensure that participants did not conflate promotion with approach motivation and prevention with avoidance motivation, they were explicitly told that “Both types of motivation want positive, desired outcomes, but the *kinds* of outcomes on which each type of motivation focuses are different.” They learned that prevention is a type of motivation focused on desired outcomes like safety and security, whereas promotion focuses on desired outcomes like achievement and growth. Further, they learned that prevention-focused people prefer to avoid losses, put themselves in situations where they will not lose, and maintain a current satisfactory status quo to avoid worse states. Promotion-focused people prefer to pursue gains, avoid situations where they will not gain, and change the status quo in order to attain a better state. Finally, they learned that people strongly motivated by prevention are focused on the positive things they ought to do in a given situation, so they tend to pursue their goals vigilantly; in contrast, people strongly motivated by promotion are focused on the positive things they would ideally like to do in a given situation, so they tend to pursue their goals eagerly.
+
+After learning these distinctions between prevention and promotion, participants proceeded to the activity sorting task described above. Between each block of trials, the prevention-promotion distinctions first encountered in the initial training were presented again to refresh participants’ memories. Finally, after finishing the sorting task, participants completed the exploratory items intended to probe their categorization experience. Participants then optionally provided demographic information and were debriefed, thanked, and compensated.
+
+## Results
+
+### Analytic Strategy
+
+The primary analysis examined whether our predictions about the hypothesized regulatory focus of each prevention or promotion process activity were reflected in participants’ categorization decisions. We selected the subset of the data comprising only activities we hypothesized to reflect prevention- or promotion-specific processes (*N*=`r nrow(rftest_rmf)`) and analyzed these data within a Bayesian multilevel binomial logistic regression model. Participants’ categorization decisions (i.e., our primary dependent variable) were dummy-coded for this analysis (0=*prevention*; 1=*promotion*), and the same coding scheme was applied to the hypothesized regulatory focus of each activity (i.e., our primary independent variable). The model also included promotion (*vs.* prevention) pride dominance as a covariate, as we were also interested in testing if categorization decisions were associated with chronic individual differences in regulatory focus. Other covariates included as fixed effects were the initial placement of the category names (effect-coded: –0.5=*right*; +0.5=*left*), as well as trial, activity frequency, and activity length (all rescaled: *M*=0; *SD*=1). Random effects included in the model were random intercepts of participant and activity; random slopes of trial, activity frequency, and activity length by participant; and random slopes of promotion pride dominance by activity.
+
+The secondary analysis tested whether verbs that we hypothesized were prevention- or promotion-specific process activities were categorized more quickly than general process activities that we hypothesized were *not* associated with a particular regulatory focus. To conduct this analysis, we analyzed all categorization decisions for the 51 process activities (*N*=`r nrow(rftest)`) within a Bayesian multilevel multiple regression model. Participants’ response latencies for each categorization decision were log-transformed to normalize the distribution. Then, these log-transformed response latencies were regressed on a dummy-coded variable capturing whether or not each activity was hypothesized to reflect a specific regulatory focus (0=*not a prevention or promotion activity*; 1=*prevention or promotion activity*). This model included the same covariates and random effects as the primary model. (For descriptive statistics and correlations among all variables included within these models, see Table S3 in the Supplementary Material.)
+
+Additionally, we examined the consistency and speed of participants’ categorization decisions about each activity in Study 1A in order to refine the activity list. In doing so, we aimed to develop a final pool of 24 activities, with six per category (prevention-truth; prevention-control; promotion-truth; promotion-control). We also used the activity length and frequency information to ensure that these four groups did not significantly differ on these dimensions. After making these list refinements, we re-conducted our primary and secondary analyses using this refined activity list, the results of which can be found in the Supplementary Material.
+
+``` {r s1a_rfcat_overall}
+# Bayesian logistic regression with random intercepts for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_1a_overall <- brm(rfcat.d ~ 1 + (1 | id) + (1 | stim), family = binomial, data = rftest_rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.95))
+# save(mlmrfcatb_1a_overall, file = "models/mlmrfcatb_1a_overall.rda")
+load("models/mlmrfcatb_1a_overall.rda")
+#summary(mlmrfcatb_1a_overall)
+```
+
+### Activity Categorization Decisions
+
+Among the categorization decisions for all goal pursuit process activities (i.e., both the process activities hypothesized to be regulatory focus-specific as well as general process activities), on average, `r myround((1 - mean(rftest$rfcat.d)) * 100, digits = 2)`% were categorized as prevention and `r myround((mean(rftest$rfcat.d)) * 100, digits = 2)`% were categorized as promotion. Among the decisions made with respect to the proposed list of prevention- and promotion-specific goal pursuit process activities, a similar pattern emerged: an average of `r myround((1 - mean(rftest_rmf$rfcat.d)) * 100, digits = 2)`% of activities were categorized as prevention and `r myround((mean(rftest_rmf$rfcat.d)) * 100, digits = 2)`% were categorized as promotion. By estimating the intercept within a Bayesian multilevel logistic regression model including a fixed intercept as well as random intercepts of participant and activity, we determined that the probability of categorizing the hypothesized regulatory focus-specific process activities as promotion (log odds of `r myround(as.data.frame(fixef(mlmrfcatb_1a_overall))$Estimate, digits = 2)` units; 95% CI: `r myround(as.data.frame(fixef(mlmrfcatb_1a_overall))$Q2.5, digits = 2)`, `r myround(as.data.frame(fixef(mlmrfcatb_1a_overall))$Q97.5, digits = 2)`; probability of `r myround(invlog(as.data.frame(fixef(mlmrfcatb_1a_overall))$Estimate) * 100, digits = 2)`%; 95% CI: `r myround(invlog(as.data.frame(fixef(mlmrfcatb_1a_overall))$Q2.5) * 100, digits = 2)`%, `r myround(invlog(as.data.frame(fixef(mlmrfcatb_1a_overall))$Q97.5) * 100, digits = 2)`%) did not differ significantly from chance (i.e., a probability of 50%).
+
+### Activity Categorization Response Latency
+
+Among all categorization decisions (i.e., for all process activities), on average, activities were categorized in `r myround(mean(rftest$rfrt) / 1000, digits = 2)` seconds, and hypothesized prevention- and promotion-specific goal pursuit process activities were categorized in `r myround(mean(rftest_rmf$rfrt) / 1000, digits = 2)` seconds.
+
+### Primary Analysis: Do Our Hypotheses About Whether Each Process Activity Reflects a Promotion (vs. Prevention) Focus Predict Participants’ Categorization Decisions?
+
+``` {r s1a_rfcat}
+## PRIMARY ANALYSIS: CONDUCTED WITH ORIGINAL RF-SPECIFIC ACTIVITIES FOR STUDY 1A
+# Bayesian multilevel logistic regression with random intercepts and slopes for each stimulus and participant (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrfcatb_1a <- brm(rfcat.d ~ stimrf.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), family = binomial, data = rftest_rmf, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.97))
+# save(mlmrfcatb_1a, file = "models/mlmrfcatb_1a.rda")
+load("models/mlmrfcatb_1a.rda")
+# summary(mlmrfcatb_1a)
+
+table2a <- broom::tidy(mlmrfcatb_1a)
+table2a <- rename(table2a, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+table2a$Type <- NULL
+table2a$component <- NULL
+table2a$Estimate <- round(table2a$Estimate, digits = 2)
+table2a$Post.SD <- round(table2a$Post.SD, digits = 2)
+table2a$Lower <- round(table2a$Lower, digits = 2)
+table2a$Upper <- round(table2a$Upper, digits = 2)
+table2a <- table2a[!(table2a$Effect == "cor__(Intercept).rftrialcs"), ]
+table2a <- table2a[!(table2a$Effect == "cor__(Intercept).freq.s"), ]
+table2a <- table2a[!(table2a$Effect == "cor__rftrialcs.freq.s"), ]
+table2a <- table2a[!(table2a$Effect == "cor__(Intercept).length.s"), ]
+table2a <- table2a[!(table2a$Effect == "cor__rftrialcs.length.s"), ]
+table2a <- table2a[!(table2a$Effect == "cor__freq.s.length.s"), ]
+table2a <- table2a[!(table2a$Effect == "cor__(Intercept).promdom.effc"), ]
+table2a <- table2a[!(table2a$Effect == "sd__(Intercept)"), ]
+table2a <- table2a[!(table2a$Effect == "sd__rftrialcs"), ]
+table2a <- table2a[!(table2a$Effect == "sd__freq.s"), ]
+table2a <- table2a[!(table2a$Effect == "sd__length.s"), ]
+table2a <- table2a[!(table2a$Effect == "sd__promdom.effc"), ]
+table2a$Effect[table2a$Effect == "(Intercept)"] <- "Intercept"
+table2a$Effect[table2a$Effect == "stimrf.d"] <- "Hypothesized Activity RF (0=Prev.; 1=Prom.)"
+table2a$Effect[table2a$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+table2a$Effect[table2a$Effect == "rftrialcs"] <- "Trial"
+table2a$Effect[table2a$Effect == "rfleft.e"] <- "Order of Category Labels"
+table2a$Effect[table2a$Effect == "freq.s"] <- "Frequency of Use in English Language"
+table2a$Effect[table2a$Effect == "length.s"] <- "Length"
+table2a[is.na(table2a)] <- ""
+table2a$group <- NULL
+```
+
+``` {r s1a_rflogrt}
+## SECONDARY ANALYSIS: CONDUCTED WITH ORIGINAL RF-SPECIFIC ACTIVITIES FOR STUDY 1A
+# Bayesian multilevel linear regression with random intercepts and slopes for each stimulus and participant  (commented out after initial analysis, as code takes a while to run; to re-run, un-comment the following three lines)
+# set.seed(1234)
+# mlmrflogrtb_1a <- brm(rflogrt ~ rfornot.d + promdom.effc + rftrialcs + rfleft.e + freq.s + length.s + (rfornot.d + rftrialcs + freq.s + length.s | id) + (promdom.effc | stim), data = rftest, cores = 4, chains = 4, iter = 3000, control = list(adapt_delta = 0.99))
+# save(mlmrflogrtb_1a, file = "models/mlmrflogrtb_1a.rda")
+load("models/mlmrflogrtb_1a.rda")
+# summary(mlmrflogrtb_1a)
+
+table2b <- broom::tidy(mlmrflogrtb_1a)
+table2b <- rename(table2b, Type = effect, Effect = term, Estimate = estimate, Post.SD = std.error, Lower = conf.low, Upper = conf.high)
+table2b$Type <- NULL
+table2b$component <- NULL
+table2b$Estimate <- round(table2b$Estimate, digits = 2)
+table2b$Post.SD <- round(table2b$Post.SD, digits = 2)
+table2b$Lower <- round(table2b$Lower, digits = 2)
+table2b$Upper <- round(table2b$Upper, digits = 2)
+table2b <- table2b[!(table2b$Effect == "cor__(Intercept).rftrialcs"), ]
+table2b <- table2b[!(table2b$Effect == "cor__(Intercept).freq.s"), ]
+table2b <- table2b[!(table2b$Effect == "cor__rftrialcs.freq.s"), ]
+table2b <- table2b[!(table2b$Effect == "cor__(Intercept).length.s"), ]
+table2b <- table2b[!(table2b$Effect == "cor__rftrialcs.length.s"), ]
+table2b <- table2b[!(table2b$Effect == "cor__freq.s.length.s"), ]
+table2b <- table2b[!(table2b$Effect == "cor__(Intercept).promdom.effc"), ]
+table2b <- table2b[!(table2b$Effect == "sd__Observation"), ]
+table2b <- table2b[!(table2b$Effect == "sd__(Intercept)"), ]
+table2b <- table2b[!(table2b$Effect == "sd__rftrialcs"), ]
+table2b <- table2b[!(table2b$Effect == "sd__freq.s"), ]
+table2b <- table2b[!(table2b$Effect == "sd__length.s"), ]
+table2b <- table2b[!(table2b$Effect == "sd__promdom.effc"), ]
+table2b$Effect[table2b$Effect == "(Intercept)"] <- "Intercept"
+table2b$Effect[table2b$Effect == "rfornot.d"] <- "Hypothesized RF-Specific Activity (0=No; 1=Yes)"
+table2b$Effect[table2b$Effect == "promdom.effc"] <- "Promotion (vs. Prevention) Pride Dominance"
+table2b$Effect[table2b$Effect == "rftrialcs"] <- "Trial"
+table2b$Effect[table2b$Effect == "rfleft.e"] <- "Order of Category Labels"
+table2b$Effect[table2b$Effect == "freq.s"] <- "Frequency of Use in English Language"
+table2b$Effect[table2b$Effect == "length.s"] <- "Length"
+table2b[is.na(table2b)] <- ""
+table2b$group <- NULL
+```
+
+```{r table2}
+table2 <- rbind(table2a, table2b)
+
+table2_print <- kable(table2, "latex", booktabs = TRUE, caption = "Parameter Estimates for Multilevel Binomial Logistic Regression Analysis Predicting Process Activity Categorization and Multilevel Multiple Regression Analysis Predicting Log-Transformed Response Latency (Study 1A; Fixed Effects Only)") %>%
+  kable_styling(latex_options = c("scale_down")) %>%
+  add_header_above(c(" " = 3, "95% CI" = 2)) %>%
+  group_rows("DV: Activity Categorization (0=Prev.; 1=Prom.)", 1, 7) %>%
+  group_rows("DV: Log-Transformed Response Latency", 8, 14) %>%
+  row_spec(2, bold = T) %>%
+  row_spec(9, bold = T) %>%
+  footnote(general = "RF=Regulatory Focus; Prom.=Promotion; Prev.=Prevention. Effects for the predictor of interest are shown in bold. For the complete results of these analyses, including random effects, see Tables S4 and S5 in the Supplementary Material.", general_title = "Note: ", footnote_as_chunk = T, title_format = c("italic"), threeparttable = TRUE)
+```
+
+To test if our hypotheses about the process activities’ regulatory focus predicted participants’ categorization decisions, we examined the model output from the Bayesian multilevel logistic regression analysis (see the upper panel of Table 2 and Figure 1). The estimated effect of hypothesized activity regulatory focus was `r beff(table2[2, "Estimate"])` log odds units ($OR=`r beff(exp(table2[2, "Estimate"]))`$), with a 95% credible interval that did not include zero (`r beff(table2[2, "Lower"])`, `r beff(table2[2, "Upper"])`). This credible interval suggests that there is an association between our hypotheses about the prevention versus promotion focus of goal pursuit process activities and participants’ categorization decisions. Transformed into probabilities, the model predicts that activities that we hypothesized were associated with prevention had a `r round(100 - invlog(as.data.frame(fixef(mlmrfcatb_1a))["Intercept","Estimate"])*100, digits = 2)`% probability of being categorized as prevention, and activities that we hypothesized were associated with promotion had an `r round(invlog(as.data.frame(fixef(mlmrfcatb_1a))["Intercept","Estimate"] + as.data.frame(fixef(mlmrfcatb_1a))["stimrf.d","Estimate"])*100, digits = 2)`% probability of being categorized as promotion.
+
+```{r table2_print, include = TRUE, results = 'asis'}
+table2_print
+```
+
+Additionally, this analysis allowed us to test if participants’ categorization of *any* given process activity as promotion or prevention is a function of the participant’s promotion (*vs.* prevention) pride dominance. As indicated in the upper panel of Table 2, the estimated effect of promotion pride dominance on activity categorization is `r beff(table2[3, "Estimate"])`, with a 95% credible interval that includes zero (`r beff(table2[3, "Lower"])`, `r beff(table2[3, "Upper"])`). This credible interval indicates that we cannot infer any association between individual differences in promotion pride dominance and participants’ categorization decisions. Further, no other fixed effects in this primary analysis had a credible interval excluding zero.
+
+```{r s1a_rfcat_plot}
+# Determining predictions for average participant
+catpred.data <- NULL
+for (i in unique(rftest_rmf$id)) {
+  data <- data.frame(
+    stimrf.d = seq(0, 1, by = .05),
+    promdom.effc = 0,
+    rftrialcs = 0,
+    rfleft.e = 0,
+    freq.s = 0,
+    length.s = 0,
+    id = i)
+  catpred.data <- rbind(catpred.data, data)
+}
+catpred.data <- cbind(catpred.data, fitted(mlmrfcatb_1a, catpred.data, re_formula=NA, incl_autocor = F))
+
+# Generate plot
+fig1 <- ggplot(data = catpred.data, aes(x = stimrf.d, y = Estimate)) +
+  geom_point(data = rftest_rmf, aes(stimrf.d, rfcat.d, fill = stimrf, color = stimrf, shape = stimrf), alpha = 0.01, position = position_jitter(h = .05, w = .05)) +
+  geom_ribbon(data = catpred.data, aes(ymin=`Q2.5`, ymax=`Q97.5`), alpha = .5,
+              fill = "gray") + 
+  geom_line(data = catpred.data, aes(x = stimrf.d, y = Estimate, group = NULL), color = "#438BFF", size = 1.5) +
+  labs(x = "Hypothesized Regulatory Focus\n(0=Prevention; 1=Promotion)", y = "Probability of Categorization as\nPromotion (vs. Prevention)", color = "Hypothesized Regulatory Focus", fill = "Hypothesized Regulatory Focus", shape = "Hypothesized Regulatory Focus") +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Prevention", "Promotion")) +
+  scale_color_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_fill_manual(values = c("prev" = "lightcoral", "prom" = "seagreen3"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention")) +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10)) +
+  guides(colour = guide_legend(override.aes = list(alpha = .5)))
+```
+
+```{r s1a_rfcat_plot_bw}
+# Generate plot - Black & White
+fig1_bw <- ggplot(data = catpred.data, aes(x = stimrf.d, y = Estimate)) +
+  geom_point(data = rftest_rmf, aes(stimrf.d, rfcat.d, fill = stimrf, color = stimrf, shape = stimrf), alpha = 0.01, position = position_jitter(h = .05, w = .05)) +
+  geom_ribbon(data = catpred.data, aes(ymin=`Q2.5`, ymax=`Q97.5`), alpha = .5,
+              fill = "gray") + 
+  geom_line(data = catpred.data, aes(x = stimrf.d, y = Estimate, group = NULL), color = "black", size = 1.5) +
+  labs(x = "Hypothesized Regulatory Focus\n(0=Prevention; 1=Promotion)", y = "Probability of Categorization as\nPromotion (vs. Prevention)", color = "Hypothesized Regulatory Focus", fill = "Hypothesized Regulatory Focus", shape = "Hypothesized Regulatory Focus") +
+  scale_x_continuous(breaks = c(0, 1), labels = c("Prevention", "Promotion")) +
+  scale_color_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_fill_manual(values = c("prev" = "gray33", "prom" = "gray67"),
+                     labels = c("prev" = "Prevention", "prom" = "Promotion")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention")) +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10)) +
+  guides(colour = guide_legend(override.aes = list(alpha = .5)))
+```
+
+(ref:fig1cap) Probability of Categorization as Promotion (vs. Prevention) as a Function of Hypothesized Activity Regulatory Focus (Study 1A)
+
+```{r fig1, include = TRUE, fig.cap = "(ref:fig1cap)", fig.align = "center", out.width = '90%', out.height = '90%'}
+fig1
+```
+
+\squeezeup
+
+\begingroup
+\setlength{\parindent}{0in}
+*Note.* Model-predicted probability of categorization as promotion (*vs.* prevention) as a function of hypothesized activity regulatory focus, at typical levels of promotion pride dominance, trial, order of label presentation, activity frequency of use in the English language, and activity length. The red (dark gray) squares represent categorization decisions for activities hypothesized to reflect prevention processes. The green (light gray) circles represent categorization decisions for activities hypothesized to reflect promotion processes. Shaded region represents 95% credible interval.
+\endgroup
+
+### Secondary Analysis: Are Activities Hypothesized to Be Associated with a Specific Regulatory Focus Process Categorized More Quickly Than Process Activities Without These Hypothesized Associations?
+
+To test if our hypotheses about the process activities’ associations with regulatory focus (*vs.* lack thereof) predicted how quickly participants made their categorization decisions, we examined the model output from the Bayesian multilevel multiple regression analysis (see the lower panel of Table 2). The estimated effect of this hypothesized association with regulatory focus is `r beff(table2[9, "Estimate"])` log-transformed milliseconds, with a 95% credible interval that did not include zero (`r beff(table2[9, "Lower"])`, `r beff(table2[9, "Upper"])`). These results suggest that, as hypothesized, participants were faster in categorizing activities that we hypothesized were (*vs.* were not) associated with a specific regulatory focus process. The model predicts that activities that we hypothesized were associated with a specific regulatory focus process would be categorized in `r myround(exp(as.numeric(beff(table2[8, "Estimate"])) + as.numeric(beff(table2[9, "Estimate"]))) / 1000, digits = 2)` seconds, and activities that we hypothesized were *not* associated with a specific regulatory focus process would be categorized in `r myround(exp(as.numeric(beff(table2[8, "Estimate"]))) / 1000, digits = 2)` seconds.
+
+Additionally, this analysis allowed us to test if participants’ response latencies in categorizing all process activities were associated with their promotion (*vs.* prevention) pride dominance. As indicated in the lower panel of Table 2, the estimated effect of promotion pride dominance is `r beff(table2[10, "Estimate"])`, with a 95% credible interval that includes zero (`r beff(table2[10, "Lower"])`, `r beff(table2[10, "Upper"])`). These results suggest no association between individual differences in promotion pride dominance and participants’ categorization speed. Finally, several covariates were associated with participants’ response latency, including trial (such that participants’ categorization speed increased over the course of the study) and activities’ frequency of use in the English language (such that more frequently used words were categorized more quickly).
+
+### Activity List Refinement
+
+```{r s1a_freqlength}
+stimsummary_rmf_1a1b$stimrf_1b.d[stimsummary_rmf_1a1b$stimrf_1b == "prev"] <- 0
+stimsummary_rmf_1a1b$stimrf_1b.d[stimsummary_rmf_1a1b$stimrf_1b == "prom"] <- 1
+
+# stimlength <- brm(length ~ stimrf_1b.d, data = stimsummary_rmf_1a1b, cores = 4, chains = 4)
+# save(stimlength, file = "models/stimlength.rda")
+load("models/stimlength.rda")
+# summary(stimlength)
+
+# stimfreq <- brm(freq ~ stimrf_1b.d, data = stimsummary_rmf_1a1b, cores = 4, chains = 4)
+# save(stimfreq, file = "models/stimfreq.rda")
+load("models/stimfreq.rda")
+# summary(stimfreq)
+```
+
+Although the analyses above provided initial support for the proposed framework, given that this study represented our first thorough investigation on this topic, we were interested in refining the activity lists based on these results. We intended to develop a slightly condensed set of process activities with an equal number of activities per category and, in doing so, we ensured that both activity length and frequency of use in the English language did not differ among the categories. To accomplish these aims, we engaged in a number of conceptual discussions about the activity categories, informed by a thorough inspection of participants’ categorization decisions and response latencies by activity.
+
+Through this process, we determined a final list of 24 prevention- and promotion-specific goal pursuit process activities (see Figure 2 and Table S2 in the Supplementary Material). Prevention activities included six prevention-truth activities (*assess*, *examine*, *judge*, *review*, *scrutinize*, *verify*) and six prevention-control activities (*defend*, *guard*, *maintain*, *preserve*, *protect*, *resist*). Promotion activities included six promotion-truth activities (*discover*, *explore*, *imagine*, *invent*, *seek*, *wonder*) and six promotion-control activities (*accelerate*, *elevate*, *launch*, *lead*, *progress*, *propel*). We also used the activity length and frequency information to ensure that the groups did not significantly differ on these dimensions. (For the results of the primary and secondary analyses conducted using this refined activity list, see Tables S6 and S7 in the Supplementary Material.)
+
+```{r s1a_rfplot}
+stimsummary_fig2 <- stimsummary
+stimsummary_fig2$stimrf_1b <- dplyr::recode(stimsummary_fig2$stimrf_1b, "na" = "gen")
+stimsummary_fig2$stimrf_1b[stimsummary_fig2$stimtype_1b == "promgen" | stimsummary_fig2$stimtype_1b == "prevgen"] <- "gen"
+
+# Promotion vs. Prevention: Categorization and Reaction Time - COLORED AND INCLUDED BASED ON 1B
+set.seed(123)
+fig2 <- ggplot(data = filter(stimsummary_fig2, stimtype != "promgen" & stimtype != "prevgen"), aes(x = meanpromprob, y = meanrflogrt)) +
+  geom_point(aes(fill = stimrf_1b, color = stimrf_1b, shape = stimrf_1b, size = stimrf_1b), alpha = 1) +
+  scale_fill_manual(values = c("prom" = "seagreen3", "prev" = "lightcoral", "gen" = "white"),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_color_manual(values = c("prom" = "white", "prev" = "white", "gen" = "black"),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22, "gen" = 24),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_size_manual(values = c("prom" = 3.5, "prev" = 3.5, "gen" = 2.5),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  geom_text_repel(aes(label = stim), size = 4, force = 18, segment.alpha = .3) +
+  labs(x="Probability of Categorization as Promotion (vs. Prevention)", y = "Log-Transformed Response Latency", fill = "Status in Refined Activity List", color = "Status in Refined Activity List", shape = "Status in Refined Activity List", size = "Status in Refined Activity List") +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10))
+```
+
+```{r s1a_rfplot_bw}
+# Promotion vs. Prevention: Categorization and Reaction Time - COLORED AND INCLUDED BASED ON 1B - Black & White
+set.seed(123)
+fig2_bw <- ggplot(data = filter(stimsummary_fig2, stimtype != "promgen" & stimtype != "prevgen"), aes(x = meanpromprob, y = meanrflogrt)) +
+  geom_point(aes(fill = stimrf_1b, color = stimrf_1b, shape = stimrf_1b, size = stimrf_1b), alpha = 1) +
+  scale_fill_manual(values = c("prom" = "gray67", "prev" = "gray33", "gen" = "white"),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_color_manual(values = c("prom" = "white", "prev" = "white", "gen" = "black"),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_shape_manual(values = c("prom" = 21, "prev" = 22, "gen" = 24),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  scale_size_manual(values = c("prom" = 3.5, "prev" = 3.5, "gen" = 2.5),
+                     labels = c("prom" = "Promotion", "prev" = "Prevention", "gen" = "Not Included")) +
+  geom_text_repel(aes(label = stim), size = 4, force = 18, segment.alpha = .3) +
+  labs(x="Probability of Categorization as Promotion (vs. Prevention)", y = "Log-Transformed Response Latency", fill = "Status in Refined Activity List", color = "Status in Refined Activity List", shape = "Status in Refined Activity List", size = "Status in Refined Activity List") +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(size = 0.5, colour = 1),
+        legend.box.margin=margin(0,0,0,0),
+        legend.title=element_text(size=11),
+        legend.text=element_text(size=10))
+```
+
+(ref:fig2cap) Probability of Categorization as Promotion (vs. Prevention) and Log-Transformed Response Latency by Process Activity (Study 1A)
+
+```{r fig2, include = TRUE, fig.cap = "(ref:fig2cap)", fig.align = "center", out.width = '90%', out.height = '90%'}
+fig2
+```
+
+\squeezeup
+
+\begingroup
+\setlength{\parindent}{0in}
+*Note.* The 24 regulatory focus-specific process activities selected during refinement of the activity list are highlighted as red (dark gray) squares (prevention) and green (light gray) circles (promotion). Activities *not* selected during this refinement process are represented as white triangles.
+\endgroup
+
+## Discussion
+
+Study 1A provided initial evidence for the proposed framework of prevention- and promotion-specific goal pursuit process activities. By introducing participants to the primary distinctions between prevention and promotion and asking them to categorize process activities on this basis, we confirmed that participants’ associations between these activities and regulatory focus reflected the framework. Notably, these categorization decisions were not influenced by participants’ own promotion (*vs.* prevention) pride dominance. This result is important because it could have been possible that participants would associate all activities with their predominant regulatory focus (e.g., if Alicia is chronically promotion-dominant, she might tend to see *all* goal pursuit activities as involving a promotion focus). However, this is not the pattern of results we found; instead, no general effect of promotion pride dominance emerged. This finding suggests that these associations are commonly understood and independent of individual differences in regulatory focus. This is consistent with individuals generally having available both the promotion and prevention systems [@higgins1997], and recognizing the difference between promotion versus prevention activities within the process of goal pursuit.
+
+Additionally, participants categorized process activities that we hypothesized related to regulatory focus more quickly than the general truth- and control-oriented process activities we hypothesized were *un*related to regulatory focus. This response latency measure provides insight into the accessibility of these associations, suggesting that participants pause slightly when considering how to categorize activities that do not seem to clearly “fit” with a given regulatory focus. These results indicate that the associations between the constructs of prevention and promotion and the hypothesized list of prevention- and promotion-specific goal pursuit activities are more accessible than the associations between the same constructs and more general goal pursuit activities. Collectively, these findings support Hypotheses 1 and 2, providing early support for the proposed framework. As a next step, we were interested in testing the generalizability of these initial findings.
+
+\newpage
+\begin{center}
+References
+\end{center}
+
+```{r create_r-references}
+r_refs(file = "manuscript/rf-activities.bib")
+```
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup

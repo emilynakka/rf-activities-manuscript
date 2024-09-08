@@ -1,0 +1,217 @@
+---
+title             : "Motivating the Journey: An Integrative Framework of Prevention Versus Promotion Goal Pursuit Activities (Study Set 1 Qualitative Analyses)"
+shorttitle        : "Prevention Versus Promotion Goal Pursuit Activities"
+
+author: 
+  - name          : "[Anonymized for Blind Peer Review]"
+
+bibliography      : ["rf-activities.bib"]
+
+floatsintext      : yes
+noextraspace      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : no
+mask              : no
+draft             : no
+
+header-includes   :
+  - \usepackage{setspace}
+  - \usepackage{makecell}
+  - \usepackage{float}
+  - \raggedbottom
+  - \usepackage[utf8]{inputenc}
+  - \DeclareUnicodeCharacter{2588}{-}
+  - \newcommand{\squeezeup}{\vspace{-10mm}}
+
+csl               : "apa.csl"
+documentclass     : "apa7"
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.pos="H")
+knitr::opts_knit$set(root.dir = normalizePath('../'))
+options(scipen = 999)
+```
+
+```{r libs}
+# Load libraries
+library(papaja) # Required to generate APA-formatted manuscript
+# library(citr) # Required to generate APA-formatted citations
+# library(rIP) # Required so usage in data cleaning can be cited
+library(knitr) # Required for knitting
+library(tidyverse) # Required for data cleaning
+library(broman) # Required for myround() function that doesn't truncate digits
+library(english) # Required to translate numbers into English text
+library(ggrepel) # Required for plots with text
+library(kableExtra) # Required for table styling
+library(brms) # Required for Bayesian multilevel models
+library(broom.mixed) # Required to extract random effects from Bayesian models
+library(Hmisc) # Required to calculate correlation significance
+
+# Define ggplot2 theme
+mytheme = theme_classic(base_size = 14) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent", color = NA),
+          panel.background = element_rect(fill = "transparent", color = "black", size = 1),
+          strip.text.x = element_blank(),
+          panel.spacing = unit(0.1, "cm"),
+          panel.border = element_rect(color="black", size = 1, fill=NA),
+          text = element_text(family="Helvetica", size=14),
+          axis.line = element_blank(),
+          axis.text.x = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.text.y = element_text(size = 11, margin=unit(c(5,5,5,5), "mm")),
+          axis.ticks = element_line(size = .5),
+          axis.ticks.length=unit(-2, "mm"))
+theme_set(mytheme)
+
+# Define functions
+invlog <- function(x) {
+  1/(1 + exp(-(x)))
+}
+
+beff <- function(x) {
+  result <- as.character(x)
+  result <- str_replace_all(result, "\\)", "")
+  result <- str_replace(result, "^.+= ", "")
+  result <- as.numeric(result)
+  result <- myround(result, digits = 2)
+  return(result)
+}
+```
+
+```{r load}
+load("data/RFgoalpursuit_study1a_clean_deidentified.RData")
+mfraw_1a <- mfraw
+stimlist_1a <- read.csv(file="data/RFgoalpursuit_study1a_stimlist.csv", header = TRUE)
+
+load("data/RFgoalpursuit_study1b_clean_deidentified.RData")
+mfraw_1b <- mfraw
+stimlist_1b <- read.csv(file="data/RFgoalpursuit_study1b2b_stimlist.csv", header = TRUE)
+
+rm(mf, mfraw, mf_eng, mfraw_eng, blocked, improper_rfs, missing_rfs, nonenglish, nonenglishpct)
+```
+
+```{r}
+mfraw_1a <- select(mfraw_1a, process, diff_stim)
+mfraw_1a <- rename(mfraw_1a, process_rf = process)
+mfraw_1a$process_tc <- NA
+mfraw_1a <- select(mfraw_1a, diff_stim, process_rf, process_tc)
+
+mfraw_1b <- select(mfraw_1b, process_rf, process_tc, diff_stim)
+mfraw_1ba <- select(mfraw_1b, diff_stim, process_rf, process_tc)
+
+mfraw <- rbind(mfraw_1a, mfraw_1ba)
+
+write.csv(mfraw, "data/qualitative.csv", row.names = FALSE, na = "")
+qual <- read.csv("data/qualitative_diffstim.csv")
+qual_long <- pivot_longer(qual, cols = c(3:9), names_to = "col", values_to = "stim")
+qual_long$diff_stim <- NULL
+qual_long$col <- NULL
+qual_long <- filter(qual_long, stim != "")
+```
+
+```{r}
+install.packages("wordcloud")
+library(wordcloud)
+install.packages("wordcloud2")
+library(wordcloud2)
+
+install.packages("tm")
+library(tm)
+#Create a vector containing only the text
+text <- qual_long$stim
+# Create a corpus  
+docs <- Corpus(VectorSource(text))
+
+dtm <- TermDocumentMatrix(docs) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df <- data.frame(word = names(words),freq=words)
+
+set.seed(1234) # for reproducibility 
+wordcloud(words = df$word, freq = df$freq, min.freq = 1,           
+          max.words=200, random.order=FALSE, rot.per=0.35,            
+          colors=brewer.pal(8, "Dark2"))
+
+install.packages("ggwordcloud")
+library(ggwordcloud)
+
+df <- df %>%
+  mutate(color = case_when(
+    word == "defend" ~ "#438bff",
+    word == "guard" ~ "#438bff",
+    word == "protect" ~ "#438bff",
+    word == "resist" ~ "#438bff",
+    word == "preserve" ~ "#438bff",
+    word == "maintain" ~ "#438bff",
+    word == "examine" ~ "#438bff",
+    word == "review" ~ "#438bff",
+    word == "assess" ~ "#438bff",
+    word == "scrutinize" ~ "#438bff",
+    word == "judge" ~ "#438bff",
+    word == "verify" ~ "#438bff",
+    word == "progress" ~ "#438bff",
+    word == "accelerate" ~ "#438bff",
+    word == "lead" ~ "#438bff",
+    word == "launch" ~ "#438bff",
+    word == "propel" ~ "#438bff",
+    word == "elevate" ~ "#438bff",
+    word == "discover" ~ "#438bff",
+    word == "explore" ~ "#438bff",
+    word == "seek" ~ "#438bff",
+    word == "imagine" ~ "#438bff",
+    word == "wonder" ~ "#438bff",
+    word == "invent" ~ "#438bff",
+    .default = "#444444"
+  ),
+  motornot = case_when(
+    word == "defend" ~ "Framework",
+    word == "guard" ~ "Framework",
+    word == "protect" ~ "Framework",
+    word == "resist" ~ "Framework",
+    word == "preserve" ~ "Framework",
+    word == "maintain" ~ "Framework",
+    word == "examine" ~ "Framework",
+    word == "review" ~ "Framework",
+    word == "assess" ~ "Framework",
+    word == "scrutinize" ~ "Framework",
+    word == "judge" ~ "Framework",
+    word == "verify" ~ "Framework",
+    word == "progress" ~ "Framework",
+    word == "accelerate" ~ "Framework",
+    word == "lead" ~ "Framework",
+    word == "launch" ~ "Framework",
+    word == "propel" ~ "Framework",
+    word == "elevate" ~ "Framework",
+    word == "discover" ~ "Framework",
+    word == "explore" ~ "Framework",
+    word == "seek" ~ "Framework",
+    word == "imagine" ~ "Framework",
+    word == "wonder" ~ "Framework",
+    word == "invent" ~ "Framework",
+    .default = "Not Framework"
+  ),
+  angle = 90 * sample(c(0, 1), n(), replace = TRUE, prob = c(60, 40)))
+
+set.seed(42)
+ggplot(data = df, aes(label = word, size = freq, color = color)) +
+  geom_text_wordcloud_area(rm_outside = FALSE, eccentricity = 1) +
+  # scale_radius(range = c(0, 75), limits = c(0, NA)) +
+  scale_size_area(max_size = 75, trans = power_trans(1/.7)) +
+  scale_color_identity() +
+  theme_minimal()
+
+set.seed(42)
+ggplot(data = df, aes(label = word, size = freq, color = color, angle = angle)) +
+  geom_text_wordcloud_area(rm_outside = FALSE, eccentricity = 1.2) +
+  scale_radius(range = c(0, 125), limits = c(0, NA)) +
+  #scale_size_area(max_size = 75, trans = power_trans(1/.7)) +
+  scale_color_identity() +
+  theme_minimal()
+ggsave("plots/website_s1a_qca.png", bg = "white", width = 8, height = 5)
+```
